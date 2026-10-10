@@ -1,0 +1,16 @@
+food_class,display_name,serving_size,calories_kcal,protein_g,carbs_g,fat_g,fiber_g,health_category,recommendation
+pizza,Pizza (Cheese/Pepperoni),1 slice (107g),266,11.0,33.0,10.0,2.3,High Calorie / Processed,High in carbohydrates and saturated fats. Best consumed in moderation; pair with a side salad.
+hamburger,Hamburger / Cheeseburger,1 sandwich (220g),540,28.0,40.0,30.0,3.0,High Protein / High Fat,Substantial protein content but high in saturated fats and sodium. Limit extra cheese and creamy sauces.
+french_fries,French Fries,1 medium portion (117g),365,4.0,48.0,17.0,4.4,High Calorie / High Fat,Deep-fried carbohydrate-dense side. Contains elevated trans/saturated fats. Consider baked alternatives.
+sushi,Sushi (Assorted Rolls),6 pieces (200g),250,9.0,38.0,5.0,2.8,Lean Protein / Heart Healthy,Clean source of lean protein and essential omega-3 fatty acids. Mindful of sodium in soy sauce.
+ice_cream,Ice Cream,1 cup (132g),273,4.6,31.6,14.5,0.9,High Sugar / Dessert,Energy-dense dessert high in simple sugars and saturated fat. Recommend smaller portion sizes.
+spaghetti_bolognese,Spaghetti Bolognese,1 plate (300g),380,18.0,52.0,10.5,4.0,Balanced Energy / Moderate Protein,Good complex carbohydrate source providing sustained energy with moderate lean beef protein.
+fried_rice,Fried Rice,1 bowl (200g),330,7.5,54.0,9.5,2.0,Carbohydrate Dense,High glycemic index meal. Incorporate extra eggs, tofu, or steamed vegetables to improve macronutrient balance.
+caesar_salad,Caesar Salad,1 bowl (200g),180,6.0,8.0,14.0,3.0,Low Calorie / Moderate Fat,High in dietary fiber, vitamins A & K. Use dressing moderately to keep saturated fats low.
+steak,Grilled Steak,1 steak (200g),450,48.0,0.0,28.0,0.0,High Protein / Zero Carb,Exceptional source of complete protein, bioavailable iron, and zinc. Monitor frequency due to red meat fat content.
+hot_dog,Hot Dog,1 hot dog with bun (140g),330,11.0,24.0,21.0,1.2,High Sodium / Processed Meat,Processed meat high in sodium and preservatives. Best kept as an occasional treat.
+pancakes,Pancakes with Syrup,2 pancakes (150g),350,6.0,62.0,9.0,1.5,High Carbohydrate / Breakfast,Rich in carbohydrates for quick morning energy. Top with fresh berries instead of refined sugary syrups.
+donuts,Glazed Donut,1 donut (60g),260,3.0,31.0,14.0,1.0,High Sugar / High Fat,Refined flour pastry with high sugar and fat density. Minimal micronutrient value.
+ramen,Ramen Noodles (with Broth),1 bowl (400g),430,14.0,55.0,16.0,3.2,High Sodium / Comfort Food,High carbohydrate and electrolyte content. Watch the sodium level in the broth if monitoring blood pressure.
+samosa,Vegetable Samosa,1 piece (80g),260,3.5,24.0,16.5,2.1,Fried Snack / Moderate Carb,Crispy pastry high in calories due to deep frying. Limit consumption or try air-fried versions.
+biryani,Chicken Biryani,1 plate (350g),520,26.0,64.0,17.0,3.8,High Protein / High Energy,Nutrient-rich festive dish with solid protein content. Watch serving portion if aiming for calorie deficits.

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Model Weights & Large Datasets (Do NOT push large datasets to Git)
+*.h5
+*.keras
+*.tflite
+*.pb
+models/saved_models/
+data/raw/
+data/food-101/
+*.zip
+*.tar.gz
+
+# Environment & OS files
+.env
+.DS_Store
+Thumbs.db
