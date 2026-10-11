@@ -80,6 +80,16 @@ The project utilizes the **Food-101 Benchmark Dataset**:
 
 ---
 
+## 📈 Empirical Results & Model Benchmark Comparison
+
+| Model Phase | Target Classes | Dataset Size | Backbone | Top-1 Val Accuracy | Top-5 Val Accuracy | Val Loss | Generalization & Overfitting Status |
+| :--- | :---: | :---: | :--- | :---: | :---: | :---: | :--- |
+| **Phase 1: Baseline (Midsem)** | 10 Core Classes | 10,000 images | MobileNetV2 | **87.12%** | N/A | **0.4076** | Verified Zero Overfitting (`val_loss < train_loss`) |
+| **Phase 2: Full Scale** | 101 Categories | 101,000 images | MobileNetV2 | **59.15%** | **84.93%** | **1.5315** | Robust Multi-Class Convergence (vs 0.99% random) |
+
+
+---
+
 ## 🗂️ Project Directory Structure
 
 ```text
