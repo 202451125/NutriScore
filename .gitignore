@@ -41,7 +41,8 @@ data/food-101/
 *.zip
 *.tar.gz
 
-# Environment & OS files
-.env
-.DS_Store
-Thumbs.db
+# Private Presentation Documents (for evaluation meetings only)
+docs/
+*.html
+*.pdf
+

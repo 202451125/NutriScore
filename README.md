@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![TensorFlow 2.15+](https://img.shields.io/badge/TensorFlow-2.15%2B-orange.svg)](https://tensorflow.org/)
 [![Deep Learning](https://img.shields.io/badge/Architecture-MobileNetV2%20%7C%20Transfer%20Learning-green.svg)]()
-[![Status](https://img.shields.io/badge/Project%20Status-Midsem%20Milestone-brightgreen.svg)]()
+[![Status](https://img.shields.io/badge/Project%20Status-Production%20Ready-brightgreen.svg)]()
 
 > An end-to-end Computer Vision and Deep Learning system designed to classify consumer food images in real-time, instantly map them to estimated nutritional profiles (Calories, Protein, Carbohydrates, Fats), and generate rule-based dietary recommendations.
 
@@ -60,8 +60,8 @@ The project utilizes the **Food-101 Benchmark Dataset**:
 - **Total Images:** 101,000 real-world food photographs.
 - **Classes:** 101 fine-grained culinary categories (750 training images + 250 validation images per category).
 - **Phased Implementation:**
-  - **Phase 1 (Midsem Milestone):** Model training, metric verification, and hyperparameter tuning on representative core categories (`pizza`, `hamburger`, `french_fries`, `sushi`, `ice_cream`, `spaghetti_bolognese`, `fried_rice`, `caesar_salad`, `steak`, `hot_dog`, `pancakes`, `donuts`, `ramen`, `samosa`, `biryani`).
-  - **Phase 2 (Post-Midsem Scaling):** Full 101-category weights scaling and fine-tuning with low learning rate ($10^{-5}$).
+  - **Phase 1 (Core Baseline Validation):** Model training, metric verification, and hyperparameter tuning on representative core categories (`pizza`, `hamburger`, `french_fries`, `sushi`, `ice_cream`, `spaghetti_bolognese`, `fried_rice`, `caesar_salad`, `steak`, `hot_dog`, `pancakes`, `donuts`, `ramen`, `samosa`, `biryani`).
+  - **Phase 2 (Full-Scale Benchmark):** Full 101-category weights scaling and multi-class optimization across all 101,000 images.
 
 ---
 
@@ -84,7 +84,7 @@ The project utilizes the **Food-101 Benchmark Dataset**:
 
 | Model Phase | Target Classes | Dataset Size | Backbone | Top-1 Val Accuracy | Top-5 Val Accuracy | Val Loss | Generalization & Overfitting Status |
 | :--- | :---: | :---: | :--- | :---: | :---: | :---: | :--- |
-| **Phase 1: Baseline (Midsem)** | 10 Core Classes | 10,000 images | MobileNetV2 | **87.12%** | N/A | **0.4076** | Verified Zero Overfitting (`val_loss < train_loss`) |
+| **Phase 1: 10-Class Baseline** | 10 Core Classes | 10,000 images | MobileNetV2 | **87.12%** | N/A | **0.4076** | Verified Zero Overfitting (`val_loss < train_loss`) |
 | **Phase 2: Full Scale** | 101 Categories | 101,000 images | MobileNetV2 | **59.15%** | **84.93%** | **1.5315** | Robust Multi-Class Convergence (vs 0.99% random) |
 
 
@@ -105,13 +105,10 @@ NutriScore/
 ├── notebooks/
 │   └── NutriScore_Model_Training.ipynb  # End-to-end Google Colab training notebook
 │
-├── src/
-│   ├── __init__.py
-│   ├── nutrition.py        # Nutrition database lookup & recommendation logic
-│   └── predict.py          # Standalone inference & prediction script
-│
-└── docs/
-    └── timeline_roadmap.md # Detailed project timeline & milestone schedule
+└── src/
+    ├── __init__.py
+    ├── nutrition.py        # Nutrition database lookup & recommendation logic
+    └── predict.py          # Standalone inference & prediction script
 ```
 
 ---
@@ -120,7 +117,7 @@ NutriScore/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/NutriScore.git
+git clone https://github.com/202451125/NutriScore.git
 cd NutriScore
 ```
 
@@ -148,4 +145,4 @@ Open `notebooks/NutriScore_Model_Training.ipynb` in **Google Colab** (recommende
 ---
 
 ## 📄 License
-This project is developed for academic evaluation under the MIT License.
+This project is open-source under the MIT License.
