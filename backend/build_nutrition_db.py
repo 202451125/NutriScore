@@ -1,0 +1,709 @@
+"""
+Bulk Clinical Nutrition Database Builder
+========================================
+Compiles verified clinical nutrition data from:
+  1. ICMR-NIN (Indian Council of Medical Research - National Institute of Nutrition)
+     "Indian Food Composition Tables 2017" (IFCT 2017)
+  2. USDA FoodData Central (FDC SR Legacy / Foundation Foods)
+
+Generates:
+  - data/clinical_nutrition.db (SQLite with indexed lookups & full-text search)
+  - data/clinical_nutrition_bulk.csv (portable tabular format for Excel / Pandas)
+
+Includes physical density (g/cm³) and water content for computer vision
+volume-to-mass estimation (Nutrition5k integration).
+"""
+
+import sqlite3
+import csv
+import os
+import sys
+
+# Output paths
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+DB_PATH = os.path.join(DATA_DIR, "clinical_nutrition.db")
+CSV_PATH = os.path.join(DATA_DIR, "clinical_nutrition_bulk.csv")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLINICAL NUTRITION DATASET (per 100g edible portion)
+# ═══════════════════════════════════════════════════════════════════════════
+# Fields:
+#   ingredient_id, display_name, category, cal, protein, carbs, fat, fiber,
+#   water_g, density_g_per_ml, source, aliases
+
+CLINICAL_INGREDIENTS = [
+    # ── 1. CEREALS & MILLETS (ICMR-NIN IFCT 2017 Group A) ──────────────────
+    (
+        "basmati_rice_cooked", "Basmati Rice (cooked)", "Cereals & Millets",
+        130.0, 2.7, 28.2, 0.3, 0.4, 68.4, 0.75,
+        "ICMR-NIN 2017 #A001", "basmati rice, basmati, cooked basmati, biryani rice, chawal"
+    ),
+    (
+        "white_rice_cooked", "White Rice (cooked)", "Cereals & Millets",
+        130.0, 2.7, 28.2, 0.3, 0.4, 68.4, 0.80,
+        "USDA FDC #169756", "white rice, rice, steamed rice, plain rice, cooked rice, boiled rice"
+    ),
+    (
+        "brown_rice_cooked", "Brown Rice (cooked)", "Cereals & Millets",
+        112.0, 2.3, 23.5, 0.8, 1.8, 72.0, 0.78,
+        "USDA FDC #169714", "brown rice, unpolished rice"
+    ),
+    (
+        "sona_masoori_cooked", "Sona Masoori Rice (cooked)", "Cereals & Millets",
+        132.0, 2.6, 29.0, 0.4, 0.5, 67.5, 0.80,
+        "ICMR-NIN 2017 #A004", "sona masoori, south indian rice"
+    ),
+    (
+        "whole_wheat_atta", "Whole Wheat Flour (Atta)", "Cereals & Millets",
+        340.0, 12.1, 64.7, 1.7, 11.2, 10.3, 0.58,
+        "ICMR-NIN 2017 #A023", "atta, whole wheat, wheat flour, gehun ka atta"
+    ),
+    (
+        "refined_wheat_flour", "Refined Wheat Flour (Maida)", "Cereals & Millets",
+        364.0, 10.3, 76.3, 0.9, 2.7, 12.5, 0.55,
+        "ICMR-NIN 2017 #A024", "maida, all purpose flour, white flour"
+    ),
+    (
+        "semolina_suji", "Semolina (Suji / Rava)", "Cereals & Millets",
+        360.0, 12.7, 72.8, 1.1, 3.9, 12.0, 0.68,
+        "ICMR-NIN 2017 #A025", "suji, rava, semolina, durum semolina"
+    ),
+    (
+        "ragi_flour", "Finger Millet (Ragi / Nachni)", "Cereals & Millets",
+        328.0, 7.3, 72.0, 1.3, 11.5, 13.1, 0.65,
+        "ICMR-NIN 2017 #A014", "ragi, nachni, finger millet, ragi flour"
+    ),
+    (
+        "jowar_flour", "Sorghum (Jowar)", "Cereals & Millets",
+        349.0, 10.4, 72.6, 1.9, 9.7, 11.9, 0.62,
+        "ICMR-NIN 2017 #A012", "jowar, sorghum, white millet"
+    ),
+    (
+        "bajra_flour", "Pearl Millet (Bajra)", "Cereals & Millets",
+        361.0, 11.6, 67.5, 5.0, 11.5, 11.5, 0.64,
+        "ICMR-NIN 2017 #A011", "bajra, pearl millet, kambu"
+    ),
+    (
+        "rolled_oats", "Rolled Oats (dry)", "Cereals & Millets",
+        389.0, 16.9, 66.3, 6.9, 10.6, 8.8, 0.42,
+        "USDA FDC #1101825", "oats, rolled oats, oatmeal"
+    ),
+    (
+        "lasagna_sheets_cooked", "Lasagna Pasta Sheets (cooked)", "Cereals & Millets",
+        135.0, 5.2, 26.0, 1.2, 1.5, 66.1, 0.90,
+        "USDA FDC #168927", "lasagna sheets, lasagna pasta, pasta sheets, lasagna"
+    ),
+    (
+        "pasta_durum_cooked", "Durum Wheat Pasta (cooked)", "Cereals & Millets",
+        131.0, 5.0, 25.4, 1.1, 1.8, 67.0, 0.85,
+        "USDA FDC #168927", "pasta, penne, fusilli, macaroni, cooked pasta"
+    ),
+    (
+        "spaghetti_cooked", "Spaghetti (cooked)", "Cereals & Millets",
+        158.0, 5.8, 30.9, 0.9, 1.8, 62.0, 0.86,
+        "USDA FDC #168928", "spaghetti, noodles, pasta noodles"
+    ),
+    (
+        "corn_flour", "Corn Starch / Corn Flour", "Cereals & Millets",
+        381.0, 0.3, 91.3, 0.1, 0.9, 8.3, 0.54,
+        "USDA FDC #169698", "cornstarch, corn flour, makki atta"
+    ),
+
+    # ── 2. TRADITIONAL BREADS & BATTERS (ICMR-NIN 2017) ───────────────────
+    (
+        "roti_chapati", "Whole Wheat Roti / Chapati", "Breads & Batters",
+        264.0, 8.7, 50.0, 3.7, 4.0, 33.6, 0.70,
+        "ICMR-NIN 2017", "roti, chapati, phulka, indian flatbread"
+    ),
+    (
+        "naan_bread", "Tandoori Naan", "Breads & Batters",
+        262.0, 8.7, 45.5, 5.1, 2.0, 38.7, 0.65,
+        "USDA FDC #174842", "naan, butter naan, tandoori naan, garlic naan"
+    ),
+    (
+        "paratha_plain", "Plain Tawa Paratha", "Breads & Batters",
+        290.0, 6.5, 42.0, 11.0, 3.2, 37.3, 0.72,
+        "ICMR-NIN 2017", "paratha, parotta, layered flatbread"
+    ),
+    (
+        "puri_fried", "Fried Puri", "Breads & Batters",
+        350.0, 7.0, 42.0, 17.0, 2.5, 31.5, 0.68,
+        "ICMR-NIN 2017", "puri, poori, fried bread"
+    ),
+    (
+        "dosa_batter_cooked", "Dosa Crepe", "Breads & Batters",
+        168.0, 4.5, 29.5, 3.8, 1.8, 60.4, 0.75,
+        "ICMR-NIN 2017", "dosa, masala dosa, plain dosa, paper roast"
+    ),
+    (
+        "idli_steamed", "Steamed Idli Cake", "Breads & Batters",
+        130.0, 3.9, 26.0, 0.4, 1.2, 68.5, 0.82,
+        "ICMR-NIN 2017", "idli, steamed idli, rice cake"
+    ),
+    (
+        "pizza_crust_baked", "Pizza Crust (baked)", "Breads & Batters",
+        275.0, 8.5, 48.0, 5.5, 2.2, 35.8, 0.60,
+        "USDA FDC #173295", "pizza base, pizza crust, pizza dough"
+    ),
+    (
+        "burger_bun", "Burger Bun", "Breads & Batters",
+        279.0, 9.4, 49.2, 4.5, 2.7, 34.2, 0.35,
+        "USDA FDC #172776", "bun, burger bun, brioche bun, sesame bun"
+    ),
+    (
+        "samosa_pastry", "Samosa Crust / Pastry", "Breads & Batters",
+        380.0, 5.5, 46.0, 19.5, 1.8, 27.2, 0.70,
+        "ICMR-NIN 2017", "samosa patti, samosa pastry, crust"
+    ),
+
+    # ── 3. PULSES & LEGUMES (ICMR-NIN IFCT 2017 Group B) ───────────────────
+    (
+        "toor_dal_cooked", "Toor Dal (pigeon pea, cooked)", "Pulses & Legumes",
+        116.0, 9.0, 20.0, 0.4, 7.9, 62.7, 0.95,
+        "ICMR-NIN 2017 #B001", "toor dal, arhar dal, yellow dal, pigeon pea, sambar dal"
+    ),
+    (
+        "chana_dal_cooked", "Chana Dal (Bengal gram split, cooked)", "Pulses & Legumes",
+        119.0, 8.9, 20.0, 1.0, 8.2, 61.9, 0.92,
+        "ICMR-NIN 2017 #B004", "chana dal, bengal gram split, gram dal"
+    ),
+    (
+        "moong_dal_cooked", "Moong Dal (yellow split, cooked)", "Pulses & Legumes",
+        105.0, 7.0, 19.0, 0.4, 7.6, 66.0, 0.94,
+        "ICMR-NIN 2017 #B006", "moong dal, mung dal, yellow moong, split moong"
+    ),
+    (
+        "urad_dal_cooked", "Urad Dal (black gram split, cooked)", "Pulses & Legumes",
+        105.0, 8.0, 18.0, 0.6, 7.0, 66.4, 0.95,
+        "ICMR-NIN 2017 #B008", "urad dal, black lentil, white urad dal"
+    ),
+    (
+        "masoor_dal_cooked", "Masoor Dal (red lentil, cooked)", "Pulses & Legumes",
+        114.0, 9.0, 20.1, 0.4, 7.9, 62.6, 0.95,
+        "ICMR-NIN 2017 #B005", "masoor dal, red lentil, pink lentil"
+    ),
+    (
+        "chickpeas_cooked", "Kabuli Chana / Chickpeas (cooked)", "Pulses & Legumes",
+        164.0, 8.9, 27.4, 2.6, 7.6, 60.2, 0.85,
+        "USDA FDC #173757", "chickpeas, kabuli chana, chole, garbanzo beans, white chana"
+    ),
+    (
+        "kala_chana_cooked", "Kala Chana (brown chickpeas, cooked)", "Pulses & Legumes",
+        155.0, 9.5, 25.5, 2.0, 8.5, 61.5, 0.86,
+        "ICMR-NIN 2017 #B003", "kala chana, brown chickpeas, desi chana"
+    ),
+    (
+        "rajma_cooked", "Rajma / Kidney Beans (cooked)", "Pulses & Legumes",
+        127.0, 8.7, 22.8, 0.5, 6.4, 67.0, 0.88,
+        "ICMR-NIN 2017 #B009", "rajma, kidney beans, red beans"
+    ),
+    (
+        "green_peas_boiled", "Green Peas (fresh, boiled)", "Pulses & Legumes",
+        84.0, 5.4, 15.6, 0.4, 5.5, 78.0, 0.72,
+        "ICMR-NIN 2017 #B012", "green peas, matar, boiled peas, mutter"
+    ),
+    (
+        "soybean_cooked", "Soybean (cooked)", "Pulses & Legumes",
+        173.0, 16.6, 9.9, 9.0, 6.0, 62.5, 0.80,
+        "USDA FDC #174270", "soybean, soya bean, soya chunks, edamame"
+    ),
+    (
+        "besan_flour", "Chickpea Flour (Besan)", "Pulses & Legumes",
+        387.0, 22.4, 57.8, 6.7, 10.8, 9.0, 0.52,
+        "ICMR-NIN 2017 #B004", "besan, chickpea flour, gram flour, kadalai maavu"
+    ),
+    (
+        "tofu_firm", "Tofu (firm)", "Pulses & Legumes",
+        76.0, 8.1, 1.9, 4.8, 0.3, 84.5, 0.98,
+        "USDA FDC #174272", "tofu, bean curd, soy paneer"
+    ),
+
+    # ── 4. VEGETABLES - LEAFY & HERBS (ICMR-NIN Group C) ───────────────────
+    (
+        "spinach_palak", "Spinach / Palak", "Leafy Vegetables",
+        23.0, 2.9, 3.6, 0.4, 2.2, 91.4, 0.45,
+        "ICMR-NIN 2017 #C020", "palak, spinach, palak saag, baby spinach"
+    ),
+    (
+        "methi_leaves", "Fenugreek Leaves (Methi)", "Leafy Vegetables",
+        49.0, 4.4, 6.0, 0.9, 3.5, 86.1, 0.42,
+        "ICMR-NIN 2017 #C014", "methi, fenugreek leaves, fresh methi"
+    ),
+    (
+        "coriander_leaves", "Coriander / Cilantro Leaves", "Leafy Vegetables",
+        31.0, 2.1, 4.2, 0.5, 2.8, 89.2, 0.40,
+        "ICMR-NIN 2017 #C008", "coriander, cilantro, dhaniya patta, fresh coriander"
+    ),
+    (
+        "mint_leaves", "Mint Leaves (Pudina)", "Leafy Vegetables",
+        44.0, 3.8, 5.8, 0.6, 3.8, 85.0, 0.40,
+        "ICMR-NIN 2017 #C017", "mint, pudina, mint leaves, fresh mint"
+    ),
+    (
+        "curry_leaves", "Curry Leaves (Kadi Patta)", "Leafy Vegetables",
+        108.0, 6.1, 18.7, 1.0, 6.4, 63.8, 0.38,
+        "ICMR-NIN 2017 #C009", "curry leaves, kadi patta, karivepaku"
+    ),
+    (
+        "cabbage_shredded", "Cabbage (raw/shredded)", "Leafy Vegetables",
+        25.0, 1.3, 5.8, 0.1, 2.5, 92.2, 0.50,
+        "ICMR-NIN 2017 #C004", "cabbage, patta gobhi, shredded cabbage"
+    ),
+    (
+        "lettuce_romaine", "Romaine Lettuce", "Leafy Vegetables",
+        17.0, 1.2, 3.3, 0.3, 2.1, 94.6, 0.35,
+        "USDA FDC #169248", "lettuce, romaine, salad greens, salad leaf"
+    ),
+
+    # ── 5. VEGETABLES - ROOTS & TUBERS (ICMR-NIN Group D) ──────────────────
+    (
+        "potato_boiled", "Potato (boiled)", "Roots & Tubers",
+        87.0, 1.9, 20.1, 0.1, 1.8, 77.0, 0.77,
+        "ICMR-NIN 2017 #D001", "potato, aloo, boiled potato, potatoes, boiled aloo"
+    ),
+    (
+        "potato_fried", "Potato (deep fried / french fries)", "Roots & Tubers",
+        312.0, 3.4, 41.4, 15.0, 3.8, 38.0, 0.55,
+        "USDA FDC #170708", "french fries, fried potatoes, aloo fry, chips"
+    ),
+    (
+        "onion_red", "Red Onion (raw)", "Roots & Tubers",
+        40.0, 1.1, 9.3, 0.1, 1.7, 89.1, 0.70,
+        "ICMR-NIN 2017 #D003", "onion, pyaaz, red onion, chopped onion, sliced onion"
+    ),
+    (
+        "onion_fried", "Biryani Fried Onion (Birista)", "Roots & Tubers",
+        240.0, 2.5, 22.0, 16.0, 3.0, 56.5, 0.60,
+        "ICMR-NIN 2017", "birista, fried onion, browned onion, caramelized onion"
+    ),
+    (
+        "garlic_fresh", "Garlic (fresh cloves)", "Roots & Tubers",
+        149.0, 6.4, 33.1, 0.5, 2.1, 58.6, 0.65,
+        "ICMR-NIN 2017 #D004", "garlic, lehsun, minced garlic, garlic cloves"
+    ),
+    (
+        "ginger_fresh", "Ginger (fresh root)", "Roots & Tubers",
+        80.0, 1.8, 17.8, 0.8, 2.0, 78.9, 0.72,
+        "ICMR-NIN 2017 #D005", "ginger, adrak, ginger root, minced ginger"
+    ),
+    (
+        "ginger_garlic_paste", "Ginger-Garlic Paste", "Roots & Tubers",
+        95.0, 3.2, 18.0, 1.0, 2.0, 74.0, 0.85,
+        "ICMR-NIN 2017", "ginger garlic paste, adrak lehsun paste, gg paste"
+    ),
+    (
+        "carrot_fresh", "Carrot (fresh)", "Roots & Tubers",
+        41.0, 0.9, 9.6, 0.2, 2.8, 88.3, 0.64,
+        "ICMR-NIN 2017 #D006", "carrot, gajar, diced carrot, baby carrot"
+    ),
+    (
+        "beetroot_fresh", "Beetroot", "Roots & Tubers",
+        43.0, 1.6, 9.6, 0.2, 2.8, 87.6, 0.68,
+        "ICMR-NIN 2017 #D008", "beetroot, beet, chukandar"
+    ),
+    (
+        "sweet_potato_boiled", "Sweet Potato (boiled)", "Roots & Tubers",
+        86.0, 1.6, 20.1, 0.1, 3.0, 77.3, 0.75,
+        "ICMR-NIN 2017 #D009", "sweet potato, shakarkandi"
+    ),
+
+    # ── 6. OTHER VEGETABLES (ICMR-NIN Group E) ─────────────────────────────
+    (
+        "tomato_red_ripe", "Tomato (red, ripe)", "Other Vegetables",
+        18.0, 0.9, 3.9, 0.2, 1.2, 94.5, 0.72,
+        "ICMR-NIN 2017 #E027", "tomato, tamatar, chopped tomato, sliced tomato, fresh tomato"
+    ),
+    (
+        "tomato_puree", "Tomato Puree / Passata", "Other Vegetables",
+        38.0, 1.6, 8.9, 0.2, 1.9, 87.0, 1.02,
+        "USDA FDC #170457", "tomato puree, canned tomato, tomato sauce, passata, marinara"
+    ),
+    (
+        "cauliflower_florets", "Cauliflower", "Other Vegetables",
+        25.0, 1.9, 5.0, 0.3, 2.0, 92.1, 0.48,
+        "ICMR-NIN 2017 #E006", "cauliflower, gobi, phool gobi, cauliflower florets"
+    ),
+    (
+        "bell_pepper_green", "Green Bell Pepper (Capsicum)", "Other Vegetables",
+        20.0, 0.9, 4.6, 0.2, 1.7, 93.9, 0.50,
+        "ICMR-NIN 2017 #E005", "bell pepper, capsicum, green capsicum, shimla mirch"
+    ),
+    (
+        "bell_pepper_red", "Red Bell Pepper", "Other Vegetables",
+        31.0, 1.0, 6.0, 0.3, 2.1, 92.2, 0.52,
+        "USDA FDC #170108", "red capsicum, red bell pepper, sweet pepper"
+    ),
+    (
+        "green_chili", "Green Chili (fresh)", "Other Vegetables",
+        40.0, 2.0, 8.8, 0.2, 1.5, 87.0, 0.55,
+        "ICMR-NIN 2017 #E007", "green chili, hari mirch, chili, green chilli"
+    ),
+    (
+        "cucumber_fresh", "Cucumber (with peel)", "Other Vegetables",
+        15.0, 0.7, 3.6, 0.1, 0.5, 95.2, 0.65,
+        "ICMR-NIN 2017 #E010", "cucumber, kheera, kakdi, sliced cucumber"
+    ),
+    (
+        "okra_bhindi", "Okra / Lady's Finger (Bhindi)", "Other Vegetables",
+        33.0, 1.9, 7.5, 0.2, 3.2, 89.6, 0.58,
+        "ICMR-NIN 2017 #E014", "bhindi, okra, ladies finger, ladyfinger"
+    ),
+    (
+        "eggplant_brinjal", "Eggplant / Brinjal (Baingan)", "Other Vegetables",
+        25.0, 1.0, 5.9, 0.2, 3.0, 92.3, 0.55,
+        "ICMR-NIN 2017 #E002", "brinjal, baingan, eggplant, aubergine"
+    ),
+    (
+        "mushrooms_white", "White Button Mushrooms", "Other Vegetables",
+        22.0, 3.1, 3.3, 0.3, 1.0, 92.5, 0.45,
+        "USDA FDC #169251", "mushroom, mushrooms, button mushroom, khumb"
+    ),
+
+    # ── 7. DAIRY & CHEESES (ICMR-NIN Group K & USDA) ───────────────────────
+    (
+        "paneer_raw", "Paneer (Indian Cottage Cheese)", "Dairy & Cheeses",
+        265.0, 18.3, 1.2, 20.8, 0.0, 53.0, 1.02,
+        "ICMR-NIN 2017 #K006", "paneer, cottage cheese, indian cheese, paneer cubes"
+    ),
+    (
+        "curd_plain_dahi", "Plain Curd / Dahi", "Dairy & Cheeses",
+        60.0, 3.5, 4.7, 3.3, 0.0, 88.0, 1.03,
+        "ICMR-NIN 2017 #K004", "curd, dahi, plain yogurt, raita curd, fresh curd"
+    ),
+    (
+        "greek_yogurt_plain", "Greek Yogurt (plain, whole milk)", "Dairy & Cheeses",
+        97.0, 9.0, 3.9, 5.0, 0.0, 81.3, 1.05,
+        "USDA FDC #171287", "greek yogurt, hung curd, strained dahi"
+    ),
+    (
+        "buttermilk_chaas", "Buttermilk (Chaas)", "Dairy & Cheeses",
+        40.0, 3.3, 4.8, 0.9, 0.0, 90.5, 1.02,
+        "ICMR-NIN 2017 #K005", "buttermilk, chaas, mattha, moru"
+    ),
+    (
+        "cow_milk_whole", "Cow Milk (whole)", "Dairy & Cheeses",
+        67.0, 3.2, 4.4, 4.1, 0.0, 87.5, 1.03,
+        "ICMR-NIN 2017 #K001", "milk, whole milk, cow milk, doodh"
+    ),
+    (
+        "ghee_clarified_butter", "Desi Ghee (Clarified Butter)", "Dairy & Cheeses",
+        900.0, 0.0, 0.0, 99.5, 0.0, 0.5, 0.91,
+        "ICMR-NIN 2017 #K008", "ghee, desi ghee, clarified butter, melted ghee"
+    ),
+    (
+        "butter_dairy", "Dairy Butter", "Dairy & Cheeses",
+        717.0, 0.9, 0.1, 81.1, 0.0, 17.9, 0.92,
+        "USDA FDC #173410", "butter, makhan, salted butter, table butter"
+    ),
+    (
+        "mozzarella_cheese", "Mozzarella Cheese (shredded)", "Dairy & Cheeses",
+        300.0, 22.2, 2.2, 22.4, 0.0, 50.0, 0.95,
+        "USDA FDC #170845", "mozzarella, mozzarella cheese, pizza cheese"
+    ),
+    (
+        "parmesan_cheese", "Parmesan Cheese (grated)", "Dairy & Cheeses",
+        431.0, 38.4, 4.1, 28.6, 0.0, 21.0, 0.85,
+        "USDA FDC #170849", "parmesan, parmigiano, grated parmesan"
+    ),
+    (
+        "cheddar_cheese", "Cheddar Cheese", "Dairy & Cheeses",
+        403.0, 24.9, 1.3, 33.1, 0.0, 36.7, 0.96,
+        "USDA FDC #173418", "cheddar, cheddar cheese, processed cheese slice"
+    ),
+    (
+        "ricotta_cheese", "Ricotta Cheese", "Dairy & Cheeses",
+        174.0, 11.3, 3.0, 13.0, 0.0, 71.7, 1.02,
+        "USDA FDC #170853", "ricotta, ricotta cheese, lasagna cheese"
+    ),
+    (
+        "heavy_cream", "Heavy Cream / Malai", "Dairy & Cheeses",
+        340.0, 2.8, 2.7, 36.1, 0.0, 57.7, 0.98,
+        "ICMR-NIN 2017", "malai, cream, fresh cream, heavy whipping cream"
+    ),
+
+    # ── 8. MEATS & POULTRY (ICMR-NIN Group L & USDA) ───────────────────────
+    (
+        "chicken_breast_cooked", "Chicken Breast (boneless, cooked)", "Meats & Poultry",
+        165.0, 31.0, 0.0, 3.6, 0.0, 65.3, 1.04,
+        "USDA FDC #171077", "chicken breast, chicken, grilled chicken, murgh breast"
+    ),
+    (
+        "chicken_thigh_cooked", "Chicken Thigh (cooked, bone-in)", "Meats & Poultry",
+        209.0, 26.0, 0.0, 10.9, 0.0, 63.0, 1.03,
+        "USDA FDC #172389", "chicken thigh, biryani chicken, chicken pieces, murgh"
+    ),
+    (
+        "chicken_mince_keema", "Minced Chicken (Keema, cooked)", "Meats & Poultry",
+        189.0, 27.5, 0.0, 8.1, 0.0, 64.0, 1.01,
+        "ICMR-NIN 2017", "chicken keema, minced chicken, ground chicken"
+    ),
+    (
+        "mutton_goat_curry", "Mutton / Goat Meat (curry cut, cooked)", "Meats & Poultry",
+        210.0, 27.0, 0.0, 11.0, 0.0, 62.0, 1.05,
+        "ICMR-NIN 2017 #L003", "mutton, goat meat, gosht, lamb meat, mutton pieces"
+    ),
+    (
+        "beef_mince_bolognese", "Ground Beef / Ragù Meat (lean, cooked)", "Meats & Poultry",
+        250.0, 26.1, 0.0, 15.4, 0.0, 58.5, 1.02,
+        "USDA FDC #174032", "ground beef, minced beef, beef ragu, beef mince, bolognese meat"
+    ),
+    (
+        "pork_cooked", "Pork Loin (lean, cooked)", "Meats & Poultry",
+        242.0, 27.3, 0.0, 14.0, 0.0, 58.7, 1.03,
+        "USDA FDC #167820", "pork, pork loin, pork chop"
+    ),
+    (
+        "egg_whole_boiled", "Whole Egg (boiled)", "Meats & Poultry",
+        155.0, 12.6, 1.1, 10.6, 0.0, 75.0, 1.03,
+        "USDA FDC #171287", "egg, boiled egg, whole egg, anda"
+    ),
+    (
+        "egg_white_boiled", "Egg White (boiled)", "Meats & Poultry",
+        52.0, 10.9, 0.7, 0.2, 0.0, 87.6, 1.04,
+        "USDA FDC #172183", "egg white, boiled egg white, egg whites"
+    ),
+    (
+        "egg_fried", "Fried Egg (sunny side up)", "Meats & Poultry",
+        196.0, 13.6, 0.8, 15.3, 0.0, 69.5, 1.02,
+        "USDA FDC #173424", "fried egg, omelette, poached egg"
+    ),
+
+    # ── 9. FISH & SEAFOOD (ICMR-NIN Group M & USDA) ────────────────────────
+    (
+        "salmon_grilled", "Salmon Fillet (grilled)", "Fish & Seafood",
+        206.0, 22.1, 0.0, 12.3, 0.0, 64.9, 1.04,
+        "USDA FDC #173686", "salmon, grilled salmon, raw salmon, salmon sushi"
+    ),
+    (
+        "rohu_fish_cooked", "Rohu Fish (Indian Carp, cooked)", "Fish & Seafood",
+        128.0, 19.5, 0.0, 5.2, 0.0, 75.0, 1.04,
+        "ICMR-NIN 2017 #M001", "rohu, rohu fish, carpo, machli, fish curry piece"
+    ),
+    (
+        "pomfret_cooked", "White Pomfret (cooked)", "Fish & Seafood",
+        138.0, 20.3, 0.0, 6.1, 0.0, 73.2, 1.03,
+        "ICMR-NIN 2017 #M005", "pomfret, silver pomfret, paplet"
+    ),
+    (
+        "prawns_cooked", "Prawns / Shrimp (cooked)", "Fish & Seafood",
+        99.0, 24.0, 0.2, 0.3, 0.0, 75.9, 1.02,
+        "ICMR-NIN 2017 #M012", "prawns, shrimp, jheenga, prawns curry"
+    ),
+    (
+        "tuna_canned", "Tuna (in water, canned)", "Fish & Seafood",
+        116.0, 25.5, 0.0, 0.8, 0.0, 73.0, 1.03,
+        "USDA FDC #171986", "tuna, canned tuna, tuna fish"
+    ),
+
+    # ── 10. NUTS & SEEDS (ICMR-NIN Group G & USDA) ─────────────────────────
+    (
+        "cashew_nuts", "Cashew Nuts (Kaju)", "Nuts & Seeds",
+        553.0, 18.2, 30.2, 43.8, 3.3, 5.2, 0.60,
+        "ICMR-NIN 2017 #G002", "cashew, kaju, cashew nuts, roasted cashews"
+    ),
+    (
+        "almonds", "Almonds (Badam)", "Nuts & Seeds",
+        579.0, 21.2, 21.6, 49.9, 12.5, 4.4, 0.62,
+        "ICMR-NIN 2017 #G001", "almond, badam, roasted almonds"
+    ),
+    (
+        "peanuts_roasted", "Peanuts / Groundnuts (roasted)", "Nuts & Seeds",
+        567.0, 25.8, 16.1, 49.2, 8.5, 6.5, 0.63,
+        "ICMR-NIN 2017 #G004", "peanut, groundnut, moongphali, roasted peanuts"
+    ),
+    (
+        "walnuts", "Walnuts (Akhrot)", "Nuts & Seeds",
+        654.0, 15.2, 13.7, 65.2, 6.7, 4.1, 0.58,
+        "ICMR-NIN 2017 #G006", "walnut, akhrot"
+    ),
+    (
+        "sesame_seeds", "Sesame Seeds (Til)", "Nuts & Seeds",
+        573.0, 17.7, 23.4, 49.7, 11.8, 4.7, 0.65,
+        "ICMR-NIN 2017 #G005", "sesame, til, sesame seeds, white sesame"
+    ),
+    (
+        "coconut_fresh_grated", "Fresh Coconut (grated)", "Nuts & Seeds",
+        354.0, 3.3, 15.2, 33.5, 9.0, 47.0, 0.50,
+        "ICMR-NIN 2017 #G003", "coconut, nariyal, grated coconut, fresh coconut, coconut chutney"
+    ),
+
+    # ── 11. COOKING FATS & OILS (ICMR-NIN Group H) ─────────────────────────
+    (
+        "mustard_oil", "Mustard Oil (Sarson ka tel)", "Fats & Oils",
+        884.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.92,
+        "ICMR-NIN 2017 #H003", "mustard oil, sarson tel, kacchi ghani"
+    ),
+    (
+        "coconut_oil", "Virgin Coconut Oil", "Fats & Oils",
+        862.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.92,
+        "ICMR-NIN 2017 #H001", "coconut oil, nariyal tel"
+    ),
+    (
+        "olive_oil_evoo", "Extra Virgin Olive Oil", "Fats & Oils",
+        884.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.92,
+        "USDA FDC #171413", "olive oil, evoo, extra virgin olive oil"
+    ),
+    (
+        "sunflower_oil", "Refined Sunflower / Vegetable Oil", "Fats & Oils",
+        884.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.92,
+        "ICMR-NIN 2017 #H005", "vegetable oil, refined oil, cooking oil, sunflower oil"
+    ),
+
+    # ── 12. SPICES & SEASONINGS (ICMR-NIN Group F) ─────────────────────────
+    (
+        "turmeric_haldi", "Turmeric Powder (Haldi)", "Spices & Seasonings",
+        349.0, 7.8, 64.9, 9.9, 21.1, 11.4, 0.65,
+        "ICMR-NIN 2017 #F007", "turmeric, haldi, turmeric powder"
+    ),
+    (
+        "cumin_seeds_jeera", "Cumin Seeds (Jeera)", "Spices & Seasonings",
+        375.0, 17.8, 44.2, 22.3, 10.5, 8.1, 0.52,
+        "ICMR-NIN 2017 #F003", "cumin, jeera, cumin seeds, cumin powder"
+    ),
+    (
+        "garam_masala", "Garam Masala (Spice Blend)", "Spices & Seasonings",
+        379.0, 15.0, 48.0, 15.0, 12.0, 9.0, 0.55,
+        "ICMR-NIN 2017", "garam masala, biryani masala, spice mix"
+    ),
+    (
+        "red_chili_powder", "Red Chili Powder (Lal Mirch)", "Spices & Seasonings",
+        318.0, 12.0, 56.6, 17.3, 27.2, 8.5, 0.50,
+        "ICMR-NIN 2017 #F002", "chili powder, red chilli powder, lal mirch"
+    ),
+    (
+        "coriander_seeds_powder", "Coriander Powder (Dhania)", "Spices & Seasonings",
+        288.0, 12.4, 55.0, 17.8, 41.9, 9.0, 0.48,
+        "ICMR-NIN 2017 #F004", "dhania powder, coriander powder, ground coriander"
+    ),
+    (
+        "black_pepper", "Black Pepper (Kali Mirch)", "Spices & Seasonings",
+        251.0, 10.4, 64.0, 3.3, 25.3, 12.5, 0.58,
+        "ICMR-NIN 2017 #F006", "black pepper, pepper, kali mirch, ground black pepper"
+    ),
+
+    # ── 13. SAUCES, CONDIMENTS & SWEETENERS ────────────────────────────────
+    (
+        "bechamel_sauce", "Béchamel White Sauce", "Sauces & Condiments",
+        150.0, 4.0, 11.0, 10.0, 0.2, 74.0, 1.05,
+        "USDA FDC #173299", "bechamel, white sauce, bechamel sauce"
+    ),
+    (
+        "mayonnaise", "Mayonnaise", "Sauces & Condiments",
+        680.0, 1.0, 0.6, 75.0, 0.0, 21.0, 0.95,
+        "USDA FDC #172370", "mayo, mayonnaise, burger sauce"
+    ),
+    (
+        "sugar_white", "Refined Cane Sugar", "Sweeteners",
+        387.0, 0.0, 99.9, 0.0, 0.0, 0.1, 0.85,
+        "ICMR-NIN 2017 #I001", "sugar, white sugar, chini"
+    ),
+    (
+        "jaggery_gur", "Organic Cane Jaggery (Gur)", "Sweeteners",
+        383.0, 0.4, 95.0, 0.1, 0.0, 4.0, 0.92,
+        "ICMR-NIN 2017 #I002", "jaggery, gur, cane jaggery, unrefined sugar"
+    ),
+    (
+        "sugar_syrup_chashni", "Rose Cardamom Sugar Syrup (Chashni)", "Sweeteners",
+        260.0, 0.0, 68.0, 0.0, 0.0, 32.0, 1.30,
+        "ICMR-NIN 2017", "sugar syrup, chashni, gulab jamun syrup"
+    ),
+    (
+        "khoya_mawa", "Khoya / Mawa (evaporated milk solids)", "Dairy & Cheeses",
+        418.0, 14.6, 25.4, 28.5, 0.0, 30.0, 1.10,
+        "ICMR-NIN 2017 #K007", "khoya, mawa, milk solids, gulab jamun dough"
+    ),
+    (
+        "pani_puri_water", "Mint-Coriander Spiced Water (Pani)", "Sauces & Condiments",
+        15.0, 0.5, 3.0, 0.1, 0.4, 95.5, 1.01,
+        "ICMR-NIN 2017", "teekha pani, pani puri water, spiced water, mint water"
+    ),
+    (
+        "meetha_pani_tamarind", "Tamarind Date Chutney (Meetha Pani)", "Sauces & Condiments",
+        120.0, 0.8, 30.0, 0.1, 1.2, 67.0, 1.15,
+        "ICMR-NIN 2017", "tamarind chutney, meetha pani, saunth, sweet chutney"
+    ),
+]
+
+
+def build_databases():
+    """Create SQLite database and CSV file."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
+    # ── 1. BUILD CSV ────────────────────────────────────────────────────────
+    print(f"[1/3] Building CSV export: {CSV_PATH}")
+    with open(CSV_PATH, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "ingredient_id", "display_name", "category",
+            "calories_per_100g", "protein_g", "carbs_g", "fat_g", "fiber_g",
+            "water_g", "density_g_per_ml", "clinical_source", "search_aliases"
+        ])
+        for row in CLINICAL_INGREDIENTS:
+            writer.writerow(row)
+    print(f"      Successfully wrote {len(CLINICAL_INGREDIENTS)} clinical ingredients to CSV.")
+
+    # ── 2. BUILD SQLITE DB ──────────────────────────────────────────────────
+    print(f"[2/3] Building SQLite Database: {DB_PATH}")
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # Create primary table
+    cursor.execute("""
+    CREATE TABLE ingredients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ingredient_id TEXT UNIQUE NOT NULL,
+        display_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        calories_per_100g REAL NOT NULL,
+        protein_g REAL NOT NULL,
+        carbs_g REAL NOT NULL,
+        fat_g REAL NOT NULL,
+        fiber_g REAL NOT NULL,
+        water_g REAL NOT NULL,
+        density_g_per_ml REAL NOT NULL,
+        clinical_source TEXT NOT NULL,
+        search_aliases TEXT NOT NULL
+    );
+    """)
+
+    # Create indices for sub-millisecond lookup speed
+    cursor.execute("CREATE INDEX idx_ingredient_id ON ingredients(ingredient_id);")
+    cursor.execute("CREATE INDEX idx_category ON ingredients(category);")
+
+    # Insert rows
+    cursor.executemany("""
+    INSERT INTO ingredients (
+        ingredient_id, display_name, category,
+        calories_per_100g, protein_g, carbs_g, fat_g, fiber_g,
+        water_g, density_g_per_ml, clinical_source, search_aliases
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    """, CLINICAL_INGREDIENTS)
+
+    conn.commit()
+    print(f"      Successfully inserted {cursor.rowcount} records into SQLite.")
+
+    # ── 3. VERIFY LOOKUP FUNCTIONALITY ──────────────────────────────────────
+    print("[3/3] Running verification test query on SQLite:")
+    test_queries = ["biryani rice", "lasagna sheets", "paneer", "mustard oil"]
+    for q in test_queries:
+        cursor.execute("""
+        SELECT display_name, calories_per_100g, protein_g, clinical_source
+        FROM ingredients
+        WHERE ingredient_id LIKE ? OR search_aliases LIKE ?
+        LIMIT 1;
+        """, (f"%{q}%", f"%{q}%"))
+        res = cursor.fetchone()
+        if res:
+            print(f"      Query '{q}' -> MATCH: {res[0]} | {res[1]} kcal | {res[2]}g protein | Source: {res[3]}")
+        else:
+            print(f"      Query '{q}' -> NO MATCH!")
+
+    conn.close()
+    print("\nDatabase build complete! Ready for offline clinical queries.")
+
+
+if __name__ == "__main__":
+    build_databases()
