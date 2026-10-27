@@ -504,7 +504,7 @@ body {
     color: var(--matcha-sage);
 }
 
-/* Top-Down Circular Food Plate with Realistic Cast Shadow */
+/* Top-down Circular Food Plate */
 .floating-plate-wrap {
     position: absolute;
     right: -30px;
@@ -1527,8 +1527,20 @@ body {
 .tile-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
+
+.macro-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-energy { background: #E63946; }
+.dot-protein { background: #457B9D; }
+.dot-carbs { background: #E9C46A; }
+.dot-fat { background: #2A9D8F; }
 
 .tile-name {
     font-size: 0.75rem;

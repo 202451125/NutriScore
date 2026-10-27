@@ -27,7 +27,12 @@
     <header class="navbar">
         <div class="nav-container">
             <div class="brand">
-                <div class="brand-symbol">🥗</div>
+                <div class="brand-symbol">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                    </svg>
+                </div>
                 <div class="brand-text">
                     <span class="brand-name">NutriScore<span class="brand-dot">.</span></span>
                     <span class="brand-sub">AI Vision Studio</span>
@@ -74,14 +79,12 @@
                 <!-- Dual-Engine Switcher Hero Bar -->
                 <div class="hero-engine-toggle">
                     <button class="engine-pill-btn active" id="btnEngineGemini" data-engine="gemini">
-                        <span class="engine-pill-icon">🧠</span>
                         <div class="engine-pill-text">
                             <strong>Engine 2: Gemini Multimodal</strong>
                             <small>Zero-Shot Ingredient Decomposition + ICMR Clinical DB</small>
                         </div>
                     </button>
                     <button class="engine-pill-btn" id="btnEngineLocal" data-engine="local">
-                        <span class="engine-pill-icon">⚡</span>
                         <div class="engine-pill-text">
                             <strong>Engine 1: MobileNetV2</strong>
                             <small>Academic 101-Class Classifier</small>
@@ -91,7 +94,7 @@
 
                 <div class="hero-cta-row">
                     <a href="#studio-section" class="btn-primary-coral">
-                        <span>⚡ Launch AI Studio</span>
+                        <span>Launch AI Studio</span>
                     </a>
                     <a href="#quick-vault" class="btn-secondary-matte">
                         <span>Explore Dishes →</span>
@@ -113,7 +116,7 @@
                         <p class="card-dish-sub">Chef's wholesome preparation with balanced greens & olive oil</p>
                         
                         <div class="card-metric-chips">
-                            <span class="metric-chip chip-cal">🔥 420 kcal</span>
+                            <span class="metric-chip chip-cal">420 kcal</span>
                             <span class="metric-chip chip-grade">Nutri-Score A</span>
                         </div>
 
@@ -124,9 +127,8 @@
                         </div>
                     </div>
 
-                    <!-- Floating Floating Macro Badge (Glassmorphic) -->
+                    <!-- Floating Macro Badge (Glassmorphic) -->
                     <div class="floating-mini-badge badge-macros">
-                        <span class="mini-icon">🌱</span>
                         <div>
                             <strong>ICMR-NIN 2017</strong>
                             <small>Clinical Nutrient Data</small>
@@ -135,17 +137,11 @@
 
                     <!-- Floating Ingredient Callout -->
                     <div class="floating-mini-badge badge-decomp">
-                        <span class="mini-icon">💥</span>
                         <div>
                             <strong>Deconstructed</strong>
                             <small>Grams & Oils Isolated</small>
                         </div>
                     </div>
-
-                    <!-- Subtle Floating Basil Leaves & Cherry Tomatoes -->
-                    <div class="float-leaf leaf-a">🍃</div>
-                    <div class="float-leaf leaf-b">🌿</div>
-                    <div class="float-leaf leaf-c">🍅</div>
                 </div>
             </div>
 
@@ -156,7 +152,7 @@
     <section class="quick-vault-section" id="quick-vault">
         <div class="vault-container">
             <div class="section-title-wrap">
-                <span class="section-eyebrow">✦ 1-CLICK TEST ARCHIVE ✦</span>
+                <span class="section-eyebrow">1-CLICK TEST ARCHIVE</span>
                 <h2 class="section-heading">Explore Culinary Classics with <span class="title-serif italic">Nutri-Score</span></h2>
                 <p class="section-subtext">Click any plate below to instantly load and deconstruct its nutritional architecture.</p>
             </div>
@@ -277,7 +273,7 @@
         <div class="studio-container">
             
             <div class="section-title-wrap">
-                <span class="section-eyebrow">✦ INTERACTIVE NUTRITION LABORATORY ✦</span>
+                <span class="section-eyebrow">INTERACTIVE NUTRITION LABORATORY</span>
                 <h2 class="section-heading">Plate Analysis & <span class="title-serif italic">Culinary Customizer</span></h2>
                 <p class="section-subtext">Drop any meal photo or click a vault dish. Toggle cooking fats and ingredients in real-time.</p>
             </div>
@@ -291,7 +287,13 @@
                     <!-- Clean Matte Upload Dropzone Card -->
                     <div class="matte-card upload-matte-card">
                         <div class="card-header-row">
-                            <div class="card-icon-bubble">📸</div>
+                            <div class="card-icon-bubble">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A6B52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                            </div>
                             <div class="card-title-group">
                                 <h3 class="card-main-title">Meal Photograph</h3>
                                 <p class="card-main-sub">Upload or drag any food photo from your device</p>
@@ -304,7 +306,13 @@
                             
                             <!-- Prompt State -->
                             <div class="drop-prompt-view" id="dropPromptView">
-                                <div class="drop-camera-icon">📷</div>
+                                <div class="drop-camera-icon">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#767E77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                </div>
                                 <h4 class="drop-prompt-heading">Drag and drop your food photo here</h4>
                                 <p class="drop-prompt-sub">or click to browse local files (JPG, PNG, WebP)</p>
                                 <button type="button" class="btn-browse-matte" id="btnBrowseMatte">
@@ -319,7 +327,7 @@
                                 <div class="preview-overlay-bar">
                                     <span class="preview-name-tag" id="previewFilename">Baked Lasagna (Pre-loaded plate)</span>
                                     <button type="button" class="btn-clear-photo" id="btnClearPhoto" title="Change Image">
-                                        ✕ Clear
+                                        Clear Photo
                                     </button>
                                 </div>
 
@@ -346,7 +354,6 @@
 
                         <!-- Big Action Button -->
                         <button type="button" class="btn-analyze-plate" id="btnAnalyzePlate">
-                            <span class="btn-spark-icon">⚡</span>
                             <span class="btn-text-content" id="btnAnalyzeText">Run AI Dietary Analysis</span>
                         </button>
                     </div>
@@ -354,7 +361,11 @@
                     <!-- "HOW I COOKED IT" CUSTOMIZER CARD (Matte Claymorphic Aesthetic) -->
                     <div class="matte-card customizer-matte-card" id="customizerCard">
                         <div class="card-header-row">
-                            <div class="card-icon-bubble coral-bubble">🍳</div>
+                            <div class="card-icon-bubble coral-bubble">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2v4M6 6L4 8M18 6l2 2M3 13a9 9 0 0 0 18 0H3z"/>
+                                </svg>
+                            </div>
                             <div class="card-title-group">
                                 <h3 class="card-main-title">How I Cooked It <span class="pill-human-tag">Human-in-the-Loop</span></h3>
                                 <p class="card-main-sub">Adjust cooking fat & preparation to measure true calories</p>
@@ -370,27 +381,21 @@
                             
                             <div class="fats-matte-grid" id="fatsGrid">
                                 <button type="button" class="fat-matte-chip" data-fat="desi_ghee">
-                                    <span class="fat-chip-icon">🧈</span>
                                     <span class="fat-chip-label">Desi Ghee</span>
                                 </button>
                                 <button type="button" class="fat-matte-chip" data-fat="mustard_oil">
-                                    <span class="fat-chip-icon">🌾</span>
                                     <span class="fat-chip-label">Mustard Oil</span>
                                 </button>
                                 <button type="button" class="fat-matte-chip active" data-fat="olive_oil">
-                                    <span class="fat-chip-icon">🫒</span>
                                     <span class="fat-chip-label">Olive Oil</span>
                                 </button>
                                 <button type="button" class="fat-matte-chip" data-fat="coconut_oil">
-                                    <span class="fat-chip-icon">🥥</span>
                                     <span class="fat-chip-label">Coconut Oil</span>
                                 </button>
                                 <button type="button" class="fat-matte-chip" data-fat="vegetable_oil">
-                                    <span class="fat-chip-icon">🌻</span>
                                     <span class="fat-chip-label">Refined Oil</span>
                                 </button>
                                 <button type="button" class="fat-matte-chip" data-fat="air_fried">
-                                    <span class="fat-chip-icon">💨</span>
                                     <span class="fat-chip-label">Air-Fried / Zero Oil</span>
                                 </button>
                             </div>
@@ -418,21 +423,18 @@
                             
                             <div class="prep-styles-list" id="prepStack">
                                 <button type="button" class="prep-style-item active" data-style="homestyle">
-                                    <span class="prep-item-icon">🏡</span>
                                     <div class="prep-item-text">
                                         <strong>Homestyle (Ghar Ka Khana)</strong>
                                         <small>Measured moderate oil and sodium</small>
                                     </div>
                                 </button>
                                 <button type="button" class="prep-style-item" data-style="restaurant">
-                                    <span class="prep-item-icon">🍲</span>
                                     <div class="prep-item-text">
                                         <strong>Restaurant / Dhaba Style</strong>
                                         <small>+25% Calories (Extra rich butter & cream)</small>
                                     </div>
                                 </button>
                                 <button type="button" class="prep-style-item" data-style="diet">
-                                    <span class="prep-item-icon">🥗</span>
                                     <div class="prep-item-text">
                                         <strong>Diet / Lean Preparation</strong>
                                         <small>-20% Calories (Minimal oil, reduced sodium)</small>
@@ -464,7 +466,12 @@
                     
                     <!-- Empty State Placeholder -->
                     <div class="matte-card empty-dashboard-card" id="emptyDashboardCard">
-                        <div class="empty-plate-icon">🍽️</div>
+                        <div class="empty-plate-icon">
+                            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#9EA69E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </div>
                         <h3 class="empty-heading">AI Nutritional Profile Awaiting Plate</h3>
                         <p class="empty-paragraph">
                             Choose one of the culinary classics from the vault above or upload a food photo to inspect calories, 
@@ -521,7 +528,6 @@
                         <div class="portion-interactive-panel">
                             <div class="portion-title-row">
                                 <div class="portion-label-wrap">
-                                    <span class="portion-icon-symbol">⚖️</span>
                                     <div>
                                         <strong>Adjust Serving Portion:</strong>
                                         <small class="portion-sub-text">Scales all calories & macronutrients dynamically</small>
@@ -547,7 +553,7 @@
                             <!-- Energy (Calories) -->
                             <div class="macro-tile-card tile-energy">
                                 <div class="tile-header">
-                                    <span class="tile-icon">🔥</span>
+                                    <span class="macro-dot dot-energy"></span>
                                     <span class="tile-name">Energy</span>
                                 </div>
                                 <div class="tile-val-wrap">
@@ -563,7 +569,7 @@
                             <!-- Protein -->
                             <div class="macro-tile-card tile-protein">
                                 <div class="tile-header">
-                                    <span class="tile-icon">🥩</span>
+                                    <span class="macro-dot dot-protein"></span>
                                     <span class="tile-name">Protein</span>
                                 </div>
                                 <div class="tile-val-wrap">
@@ -579,7 +585,7 @@
                             <!-- Carbohydrates -->
                             <div class="macro-tile-card tile-carbs">
                                 <div class="tile-header">
-                                    <span class="tile-icon">🌾</span>
+                                    <span class="macro-dot dot-carbs"></span>
                                     <span class="tile-name">Carbs</span>
                                 </div>
                                 <div class="tile-val-wrap">
@@ -595,7 +601,7 @@
                             <!-- Fat -->
                             <div class="macro-tile-card tile-fat">
                                 <div class="tile-header">
-                                    <span class="tile-icon">🥑</span>
+                                    <span class="macro-dot dot-fat"></span>
                                     <span class="tile-name">Total Fat</span>
                                 </div>
                                 <div class="tile-val-wrap">
@@ -614,7 +620,6 @@
                         <div class="ingredient-decomposition-card" id="ingredientDecompCard">
                             <div class="decomp-top-bar">
                                 <div class="decomp-heading-group">
-                                    <span class="decomp-sparkle-icon">💥</span>
                                     <div>
                                         <h3 class="decomp-title">Deconstructed Ingredient Matrix</h3>
                                         <p class="decomp-sub">
@@ -636,7 +641,6 @@
                         <div class="guidance-dual-grid">
                             <div class="guidance-matte-box">
                                 <div class="guidance-box-header">
-                                    <span class="guidance-box-icon">💡</span>
                                     <strong>Dietitian's Recommendation:</strong>
                                 </div>
                                 <p class="guidance-box-text" id="valRecommendation">
@@ -646,7 +650,6 @@
 
                             <div class="guidance-matte-box">
                                 <div class="guidance-box-header">
-                                    <span class="guidance-box-icon">🌿</span>
                                     <strong>Smart Food Pairing:</strong>
                                 </div>
                                 <p class="guidance-box-text" id="valPairing">

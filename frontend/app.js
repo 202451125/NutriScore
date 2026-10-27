@@ -819,5 +819,5 @@ document.addEventListener("DOMContentLoaded", () => {
     initControls();
     loadVaultDishIngredients("lasagna"); // Pre-load Lasagna ingredients into Customizer immediately!
 
-    console.log("🌿 NutriScore AI Vision v5.0 Active (Matte Finish & 3D Perspective Architecture).");
+    console.log("NutriScore AI Vision v5.0 Active (Matte Finish & 3D Perspective Architecture).");
 });
