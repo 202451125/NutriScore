@@ -3,683 +3,343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriScore AI • Dietary Vision & Ingredient Decomposition</title>
+    <title>NutriScore AI · Dietary Vision & Ingredient Decomposition</title>
     
-    <!-- Editorial & Modern Typography -->
+    <!-- Typography: Plus Jakarta Sans, Sora & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="./style.css?v=5.0">
+    <link rel="stylesheet" href="./style.css?v=6.0">
     
-    <!-- Three.js (Local Vendor) -->
+    <!-- Local Vendor Three.js -->
     <script src="./vendor/three.min.js"></script>
 </head>
 <body>
 
-    <!-- Soft Diffuse Ambient Background Glows -->
-    <div class="ambient-glow glow-peach"></div>
-    <div class="ambient-glow glow-matcha"></div>
-    <div class="ambient-glow glow-cream"></div>
+    <!-- 3D WebGL Background Canvas for Scroll-Driven Exploded Bowl -->
+    <canvas id="glCanvas"></canvas>
 
     <!-- Navigation Header -->
-    <header class="navbar">
+    <nav class="navbar">
         <div class="nav-container">
-            <div class="brand">
-                <div class="brand-symbol">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-                    </svg>
-                </div>
-                <div class="brand-text">
-                    <span class="brand-name">NutriScore<span class="brand-dot">.</span></span>
-                    <span class="brand-sub">AI Vision Studio</span>
-                </div>
+            <a href="#hero" class="brand">
+                <span class="brand-badge">NS</span>
+                <span class="brand-name">Nutri<span class="brand-accent">Score</span></span>
+            </a>
+
+            <!-- Engine Selector Toggle -->
+            <div class="nav-engine-selector">
+                <button type="button" class="engine-tab active" id="btnEngineGemini" data-engine="gemini">
+                    <span class="engine-dot"></span>
+                    <span>Gemini 3.5 Multimodal</span>
+                </button>
+                <button type="button" class="engine-tab" id="btnEngineLocal" data-engine="local">
+                    <span class="engine-dot"></span>
+                    <span>MobileNetV2 Edge</span>
+                </button>
             </div>
 
-            <!-- Central Nav Pills -->
+            <!-- Central Nav Links -->
             <div class="nav-menu">
-                <a href="#hero-stage" class="nav-item active">Overview</a>
-                <a href="#quick-vault" class="nav-item">Culinary Vault</a>
-                <a href="#studio-section" class="nav-item">Analyzer Studio</a>
+                <a href="#hero" class="nav-link active">Overview</a>
+                <a href="#vault" class="nav-link">Culinary Vault</a>
+                <a href="#studio" class="nav-link">Plate Studio</a>
             </div>
 
-            <!-- Engine Indicator -->
-            <div class="nav-engine-badge">
-                <span class="badge-pulse"></span>
-                <span class="badge-text">Gemini 3.5 + MobileNetV2 Active</span>
+            <!-- Live Status Pill -->
+            <div class="nav-status-pill">
+                <span class="status-pulse"></span>
+                <span class="status-text">Backend Active</span>
             </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION: Scroll-Driven 3D Deconstructed Food Showcase -->
+    <header class="hero-stage" id="hero">
+        <div class="hero-sticky-pin">
+            
+            <!-- Headline Header (Fades as you scroll) -->
+            <div class="hero-title-wrap">
+                <div class="hero-eyebrow">
+                    <span class="eyebrow-line"></span>
+                    <span>CLINICAL DIETARY RECOGNITION</span>
+                    <span class="eyebrow-line"></span>
+                </div>
+                <h1 class="hero-heading">
+                    Know exactly<br>
+                    <span class="hero-heading-highlight">what's on your plate.</span>
+                </h1>
+                <p class="hero-subheading">
+                    Dual-engine vision decompiles complex meals into constituent ingredients, counts real gram weights, 
+                    and clinically assigns your official European Nutri-Score.
+                </p>
+            </div>
+
+            <!-- Projected 3D Labels Tracking Levitating Food Items -->
+            <div class="projected-labels-container" id="projectedLabels">
+                <!-- Populated dynamically and positioned by Three.js matrix projection -->
+            </div>
+
+            <!-- Floating Calorie & Nutri-Score Summary Badge -->
+            <div class="floating-total-pill" id="heroTotalPill">
+                <div class="total-pill-left">
+                    <small>Plate Calories</small>
+                    <div class="total-cal-val">
+                        <b id="heroCalorieNum">0</b>
+                        <span>kcal</span>
+                    </div>
+                </div>
+                <div class="total-pill-divider"></div>
+                <div class="total-pill-grade" id="heroGradeBadge">C</div>
+            </div>
+
+            <!-- Scroll Captions that crossfade through the 3D scroll -->
+            <div class="hero-scroll-captions">
+                <p class="caption-item on">Start with any culinary plate.</p>
+                <p class="caption-item">Every ingredient, deconstructed in 3D.</p>
+                <p class="caption-item">Every gram, clinically counted.</p>
+            </div>
+
+            <!-- Scroll Cue Indicator -->
+            <a href="#vault" class="scroll-cue-wrap">
+                <span class="cue-text">Scroll to Deconstruct</span>
+                <svg class="cue-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </a>
+
         </div>
     </header>
 
-    <!-- HERO SECTION: 3D Perspective Floating Food Showcase (Inspired by Ghulam & Kumo Matcha) -->
-    <section class="hero-section" id="hero-stage">
-        <div class="hero-container">
-            
-            <!-- Left Editorial Text -->
-            <div class="hero-text-col">
-                <div class="editorial-pill">
-                    <span class="pill-dot"></span>
-                    <span>Next-Gen Dietary Intelligence</span>
-                </div>
-                
-                <h1 class="hero-title">
-                    Delicious Food.<br>
-                    <span class="title-serif italic">Every Nutrient Revealed.</span>
-                </h1>
-                
-                <p class="hero-desc">
-                    NutriScore transforms food photographs into actionable metabolic intelligence. 
-                    Our dual-engine AI isolates constituent ingredients, measures real gram weights, 
-                    factors your personal cooking methods, and assigns authentic European Nutri-Score grades.
-                </p>
+    <!-- MAIN CONTENT -->
+    <main class="content-wrapper">
 
-                <!-- Dual-Engine Switcher Hero Bar -->
-                <div class="hero-engine-toggle">
-                    <button class="engine-pill-btn active" id="btnEngineGemini" data-engine="gemini">
-                        <div class="engine-pill-text">
-                            <strong>Engine 2: Gemini Multimodal</strong>
-                            <small>Zero-Shot Ingredient Decomposition + ICMR Clinical DB</small>
-                        </div>
-                    </button>
-                    <button class="engine-pill-btn" id="btnEngineLocal" data-engine="local">
-                        <div class="engine-pill-text">
-                            <strong>Engine 1: MobileNetV2</strong>
-                            <small>Academic 101-Class Classifier</small>
-                        </div>
-                    </button>
-                </div>
-
-                <div class="hero-cta-row">
-                    <a href="#studio-section" class="btn-primary-coral">
-                        <span>Launch AI Studio</span>
-                    </a>
-                    <a href="#quick-vault" class="btn-secondary-matte">
-                        <span>Explore Dishes →</span>
-                    </a>
-                </div>
+        <!-- SECTION 1: CULINARY VAULT (Test Dishes & File Upload) -->
+        <section class="section-container" id="vault">
+            <div class="section-header-block">
+                <div class="section-tag">TEST ARCHIVE</div>
+                <h2 class="section-title">Pick a plate to test</h2>
+                <p class="section-subtitle">Select any classic dish below to inspect its ingredients, or upload your own meal photo.</p>
             </div>
 
-            <!-- Right: 3D Perspective Floating Dish Cards (Matte & Claymorphic Depth) -->
-            <div class="hero-showcase-col">
-                <div class="perspective-stage" id="perspectiveStage">
+            <div class="vault-cards-grid" id="vaultGrid">
+                <!-- 7 Curated Plates + 1 Upload Tile rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- SECTION 2: INTERACTIVE STUDIO (Preview, Customizer & Deconstructed Matrix) -->
+        <section class="section-container" id="studio">
+            <div class="section-header-block">
+                <div class="section-tag">AI ANALYSIS & CUSTOMIZER</div>
+                <h2 class="section-title">Plate Analysis & Culinary Customizer</h2>
+                <p class="section-subtitle">Adjust cooking fat and toggle ingredients to observe real-time caloric and Nutri-Score rebalancing.</p>
+            </div>
+
+            <!-- Studio 3-Column Tactical Grid -->
+            <div class="studio-layout-grid">
+                
+                <!-- COLUMN 1: Visual Plate, Nutri-Score Grade & Energy Breakdown -->
+                <div class="studio-col col-overview">
                     
-                    <!-- Floating Matte Card 1 (Main Dish Spotlight) -->
-                    <div class="floating-matte-card card-spotlight">
-                        <div class="card-tag-row">
-                            <span class="card-category-tag">Healthy Culinary</span>
-                            <span class="card-time-tag">Dinner 6:30 – 10:00 PM</span>
-                        </div>
-                        <h3 class="card-dish-name">Fresh Grilled Plate</h3>
-                        <p class="card-dish-sub">Chef's wholesome preparation with balanced greens & olive oil</p>
-                        
-                        <div class="card-metric-chips">
-                            <span class="metric-chip chip-cal">420 kcal</span>
-                            <span class="metric-chip chip-grade">Nutri-Score A</span>
+                    <!-- Plate Photo Card with Scanning HUD -->
+                    <div class="panel-card plate-visual-card">
+                        <div class="plate-photo-frame" id="platePhotoFrame">
+                            <img src="" alt="Selected Dish" id="platePhotoImg" class="plate-main-img">
+                            
+                            <!-- Telemetry Laser Scan (Active during inference) -->
+                            <div class="laser-scanner-hud hidden" id="laserScannerHud">
+                                <div class="laser-beam"></div>
+                                <div class="scanner-text">> Running Neural Vision Tokenizer...</div>
+                            </div>
+
+                            <span class="plate-cuisine-tag" id="plateCuisineTag">Indian Cuisine</span>
                         </div>
 
-                        <!-- Top-down Round Plate with Soft Ambient Cast Shadow -->
-                        <div class="floating-plate-wrap">
-                            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80" 
-                                 alt="Gourmet Bowl Plate" class="floating-plate-img">
-                        </div>
-                    </div>
-
-                    <!-- Floating Macro Badge (Glassmorphic) -->
-                    <div class="floating-mini-badge badge-macros">
-                        <div>
-                            <strong>ICMR-NIN 2017</strong>
-                            <small>Clinical Nutrient Data</small>
+                        <div class="plate-info-meta">
+                            <h3 class="plate-dish-title" id="plateDishTitle">Chicken Biryani</h3>
+                            <p class="plate-dish-desc" id="plateDishDesc">Aromatic basmati rice layered with spiced marinated chicken and saffron ghee.</p>
                         </div>
                     </div>
 
-                    <!-- Floating Ingredient Callout -->
-                    <div class="floating-mini-badge badge-decomp">
-                        <div>
-                            <strong>Deconstructed</strong>
-                            <small>Grams & Oils Isolated</small>
+                    <!-- European Nutri-Score Card -->
+                    <div class="panel-card nutriscore-panel-card">
+                        <div class="panel-header-row">
+                            <h4 class="panel-subhead">European Nutri-Score</h4>
+                            <span class="clinical-source-tag">FSAm-NPS Standard</span>
+                        </div>
+
+                        <!-- 5-Color Grade Pills -->
+                        <div class="ns-pills-row" id="nsPillsRow">
+                            <div class="ns-pill-badge pill-a" data-grade="A">A</div>
+                            <div class="ns-pill-badge pill-b" data-grade="B">B</div>
+                            <div class="ns-pill-badge pill-c active" data-grade="C">C</div>
+                            <div class="ns-pill-badge pill-d" data-grade="D">D</div>
+                            <div class="ns-pill-badge pill-e" data-grade="E">E</div>
+                        </div>
+
+                        <div class="ns-verdict-row">
+                            <b class="ns-verdict-title" id="nsVerdictTitle">Grade C · Balanced Profile</b>
+                            <span class="ns-score-val" id="nsScoreVal">Score: +6</span>
+                        </div>
+
+                        <!-- Points Breakdown Bars -->
+                        <div class="ns-bars-stack" id="nsPointsStack">
+                            <!-- Populated dynamically (Energy, Sat Fat, Sugar, Salt, Fiber, Protein) -->
                         </div>
                     </div>
-                </div>
-            </div>
 
-        </div>
-    </section>
+                    <!-- Caloric Energy & Macronutrient Summary -->
+                    <div class="panel-card energy-panel-card">
+                        <div class="panel-header-row">
+                            <h4 class="panel-subhead">Total Energy</h4>
+                            <span class="active-portion-indicator" id="activePortionTag">1.0× Standard</span>
+                        </div>
 
-    <!-- QUICK CULINARY VAULT: 3D Perspective Cards with Authentic European Nutri-Score Badges -->
-    <section class="quick-vault-section" id="quick-vault">
-        <div class="vault-container">
-            <div class="section-title-wrap">
-                <span class="section-eyebrow">1-CLICK TEST ARCHIVE</span>
-                <h2 class="section-heading">Explore Culinary Classics with <span class="title-serif italic">Nutri-Score</span></h2>
-                <p class="section-subtext">Click any plate below to instantly load and deconstruct its nutritional architecture.</p>
-            </div>
+                        <div class="big-calorie-display">
+                            <b class="calorie-number" id="calorieNumber">520</b>
+                            <span class="calorie-unit">kcal</span>
+                        </div>
 
-            <!-- Horizontal Scrollable 3D Perspective Cards -->
-            <div class="vault-cards-row" id="vaultCardsRow">
-                <!-- Dynamically populated or rendered with 3D tilt -->
-                <div class="vault-dish-card active" data-id="lasagna" data-name="Baked Lasagna" data-img="https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=600&auto=format&fit=crop&q=80" alt="Baked Lasagna" class="dish-photo">
-                        <div class="ns-corner-badge ns-c">C</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">Italian Cuisine</span>
-                        <h4 class="dish-label">Baked Lasagna</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~590 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
+                        <!-- Macros Trio (Protein, Carbs, Fat) -->
+                        <div class="macros-stream" id="macrosStream">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
+
                 </div>
 
-                <div class="vault-dish-card" data-id="biryani" data-name="Chicken Biryani" data-img="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80" alt="Chicken Biryani" class="dish-photo">
-                        <div class="ns-corner-badge ns-c">C</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">Indian (Hyderabadi)</span>
-                        <h4 class="dish-label">Chicken Biryani</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~520 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vault-dish-card" data-id="pizza" data-name="Neapolitan Pizza" data-img="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80" alt="Neapolitan Pizza" class="dish-photo">
-                        <div class="ns-corner-badge ns-d">D</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">Italian</span>
-                        <h4 class="dish-label">Neapolitan Pizza</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~266 kcal / slice</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vault-dish-card" data-id="dosa" data-name="Masala Dosa" data-img="https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=600&auto=format&fit=crop&q=80" alt="Masala Dosa" class="dish-photo">
-                        <div class="ns-corner-badge ns-b">B</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">South Indian</span>
-                        <h4 class="dish-label">Crispy Masala Dosa</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~280 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vault-dish-card" data-id="idli" data-name="Steamed Idli Sambar" data-img="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80" alt="Steamed Idli" class="dish-photo">
-                        <div class="ns-corner-badge ns-a">A</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">South Indian (Zero-Oil)</span>
-                        <h4 class="dish-label">Steamed Idli Sambar</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~160 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vault-dish-card" data-id="samosa" data-name="Vegetable Samosa" data-img="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop&q=80" alt="Vegetable Samosa" class="dish-photo">
-                        <div class="ns-corner-badge ns-d">D</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">Indian Street Food</span>
-                        <h4 class="dish-label">Crispy Samosa</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~260 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vault-dish-card" data-id="paneer_tikka" data-name="Paneer Tikka" data-img="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&auto=format&fit=crop&q=80">
-                    <div class="dish-photo-wrap">
-                        <img src="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&auto=format&fit=crop&q=80" alt="Paneer Tikka" class="dish-photo">
-                        <div class="ns-corner-badge ns-b">B</div>
-                    </div>
-                    <div class="dish-meta">
-                        <span class="dish-origin">North Indian Tandoori</span>
-                        <h4 class="dish-label">Tandoori Paneer Tikka</h4>
-                        <div class="dish-info-row">
-                            <span class="dish-cal-val">~260 kcal</span>
-                            <span class="dish-click-hint">Test Plate →</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- MAIN INTERACTIVE STUDIO: Upload, Customizer & Results -->
-    <main class="studio-section" id="studio-section">
-        <div class="studio-container">
-            
-            <div class="section-title-wrap">
-                <span class="section-eyebrow">INTERACTIVE NUTRITION LABORATORY</span>
-                <h2 class="section-heading">Plate Analysis & <span class="title-serif italic">Culinary Customizer</span></h2>
-                <p class="section-subtext">Drop any meal photo or click a vault dish. Toggle cooking fats and ingredients in real-time.</p>
-            </div>
-
-            <!-- Two Column Layout: Left (Upload + Customizer) & Right (Results + Decomposition) -->
-            <div class="studio-grid">
-                
-                <!-- LEFT COLUMN: Upload Dropzone & "How I Cooked It" Customizer -->
-                <div class="studio-col-left">
+                <!-- COLUMN 2: "How It Was Made" (Human-in-the-Loop Customizer) -->
+                <div class="studio-col col-customizer">
                     
-                    <!-- Clean Matte Upload Dropzone Card -->
-                    <div class="matte-card upload-matte-card">
-                        <div class="card-header-row">
-                            <div class="card-icon-bubble">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A6B52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                                    <polyline points="21 15 16 10 5 21"/>
-                                </svg>
+                    <div class="panel-card customizer-panel-card">
+                        <div class="panel-header-row">
+                            <h4 class="panel-subhead">How It Was Made</h4>
+                            <span class="hitl-badge">Human-in-the-Loop</span>
+                        </div>
+                        <p class="panel-instruction">Modulate portion scale, added cooking lipids, and culinary preparation style.</p>
+
+                        <!-- Portion Size Slider -->
+                        <div class="control-group">
+                            <div class="control-label-row">
+                                <span class="control-label">Portion Size</span>
+                                <b class="control-val-badge" id="portionValBadge">1.0×</b>
                             </div>
-                            <div class="card-title-group">
-                                <h3 class="card-main-title">Meal Photograph</h3>
-                                <p class="card-main-sub">Upload or drag any food photo from your device</p>
+                            <input type="range" class="custom-slider" id="portionRange" min="0.5" max="3.0" step="0.25" value="1.0">
+                            <div class="slider-ticks-row">
+                                <span>0.5× (Light)</span>
+                                <span>1.0× (Standard)</span>
+                                <span>2.0× (Double)</span>
+                                <span>3.0× (Feast)</span>
                             </div>
                         </div>
 
-                        <!-- Dropzone Container -->
-                        <div class="dropzone-matte-box" id="dropzoneBox">
-                            <input type="file" id="fileInput" accept="image/*" class="native-file-input">
-                            
-                            <!-- Prompt State -->
-                            <div class="drop-prompt-view" id="dropPromptView">
-                                <div class="drop-camera-icon">
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#767E77" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" y1="3" x2="12" y2="15"/>
-                                    </svg>
-                                </div>
-                                <h4 class="drop-prompt-heading">Drag and drop your food photo here</h4>
-                                <p class="drop-prompt-sub">or click to browse local files (JPG, PNG, WebP)</p>
-                                <button type="button" class="btn-browse-matte" id="btnBrowseMatte">
-                                    Browse Device Files
-                                </button>
+                        <!-- Extra Cooking Fat Selector -->
+                        <div class="control-group">
+                            <div class="control-label-row">
+                                <span class="control-label">Cooking Fat / Oil Medium</span>
+                                <span class="control-hint" id="fatLipidHint">Desi Ghee (Clarified Butter)</span>
                             </div>
-
-                            <!-- Preview State with Image & Neural Scan HUD -->
-                            <div class="drop-preview-view hidden" id="dropPreviewView">
-                                <img src="" alt="Food Preview" id="previewImg" class="preview-food-img">
-                                
-                                <div class="preview-overlay-bar">
-                                    <span class="preview-name-tag" id="previewFilename">Baked Lasagna (Pre-loaded plate)</span>
-                                    <button type="button" class="btn-clear-photo" id="btnClearPhoto" title="Change Image">
-                                        Clear Photo
-                                    </button>
-                                </div>
-
-                                <!-- AI Telemetry Scanner Overlay (Visible only during inference) -->
-                                <div class="telemetry-scanner-overlay hidden" id="scannerOverlay">
-                                    <div class="scanner-laser-line"></div>
-                                    <div class="scanner-corner-reticle tl"></div>
-                                    <div class="scanner-corner-reticle tr"></div>
-                                    <div class="scanner-corner-reticle bl"></div>
-                                    <div class="scanner-corner-reticle br"></div>
-                                    
-                                    <div class="telemetry-console-card">
-                                        <div class="console-title-row">
-                                            <span class="console-dot-led"></span>
-                                            <span class="console-title-text">NEURAL VISION ENGINE RUNNING</span>
-                                        </div>
-                                        <div class="console-stream" id="consoleStream">
-                                            <div>> Ingesting image tensor (512x512)...</div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="fat-chips-grid" id="fatChipsGrid">
+                                <!-- Rendered dynamically -->
                             </div>
                         </div>
 
-                        <!-- Big Action Button -->
-                        <button type="button" class="btn-analyze-plate" id="btnAnalyzePlate">
-                            <span class="btn-text-content" id="btnAnalyzeText">Run AI Dietary Analysis</span>
-                        </button>
-                    </div>
-
-                    <!-- "HOW I COOKED IT" CUSTOMIZER CARD (Matte Claymorphic Aesthetic) -->
-                    <div class="matte-card customizer-matte-card" id="customizerCard">
-                        <div class="card-header-row">
-                            <div class="card-icon-bubble coral-bubble">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2v4M6 6L4 8M18 6l2 2M3 13a9 9 0 0 0 18 0H3z"/>
-                                </svg>
+                        <!-- Added Fat Quantity Slider -->
+                        <div class="control-group">
+                            <div class="control-label-row">
+                                <span class="control-label">Added Fat Volume</span>
+                                <b class="control-val-badge" id="fatTablespoonBadge">1.0 tbsp (~120 kcal)</b>
                             </div>
-                            <div class="card-title-group">
-                                <h3 class="card-main-title">How I Cooked It <span class="pill-human-tag">Human-in-the-Loop</span></h3>
-                                <p class="card-main-sub">Adjust cooking fat & preparation to measure true calories</p>
-                            </div>
-                        </div>
-
-                        <!-- Cooking Fat / Oil Selector -->
-                        <div class="customizer-block">
-                            <label class="block-label">
-                                <span>Cooking Fat / Medium:</span>
-                                <span class="block-hint" id="fatHint">Extra virgin olive oil • Heart-healthy monounsaturated fats</span>
-                            </label>
-                            
-                            <div class="fats-matte-grid" id="fatsGrid">
-                                <button type="button" class="fat-matte-chip" data-fat="desi_ghee">
-                                    <span class="fat-chip-label">Desi Ghee</span>
-                                </button>
-                                <button type="button" class="fat-matte-chip" data-fat="mustard_oil">
-                                    <span class="fat-chip-label">Mustard Oil</span>
-                                </button>
-                                <button type="button" class="fat-matte-chip active" data-fat="olive_oil">
-                                    <span class="fat-chip-label">Olive Oil</span>
-                                </button>
-                                <button type="button" class="fat-matte-chip" data-fat="coconut_oil">
-                                    <span class="fat-chip-label">Coconut Oil</span>
-                                </button>
-                                <button type="button" class="fat-matte-chip" data-fat="vegetable_oil">
-                                    <span class="fat-chip-label">Refined Oil</span>
-                                </button>
-                                <button type="button" class="fat-matte-chip" data-fat="air_fried">
-                                    <span class="fat-chip-label">Air-Fried / Zero Oil</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Cooking Fat Quantity Stepper -->
-                        <div class="customizer-block" id="fatQuantityBlock">
-                            <div class="block-label-row">
-                                <span class="block-label-title">Cooking Fat Quantity:</span>
-                                <span class="quantity-badge" id="fatQuantityBadge">1.0 tbsp (~120 kcal)</span>
-                            </div>
-                            <div class="stepper-track-wrap">
-                                <button type="button" class="step-circle-btn" id="btnMinusFat">−</button>
-                                <input type="range" class="matte-range-slider" id="fatSlider" min="0" max="4.0" step="0.5" value="1.0">
-                                <button type="button" class="step-circle-btn" id="btnPlusFat">+</button>
+                            <input type="range" class="custom-slider" id="fatRange" min="0" max="4.0" step="0.5" value="1.0">
+                            <div class="slider-ticks-row">
+                                <span>0 tbsp (None)</span>
+                                <span>1 tbsp</span>
+                                <span>2 tbsp</span>
+                                <span>4 tbsp (Heavy)</span>
                             </div>
                         </div>
 
                         <!-- Preparation Style Selector -->
-                        <div class="customizer-block">
-                            <label class="block-label">
-                                <span>Preparation Style:</span>
-                                <span class="block-hint" id="prepHint">Balanced home cooking with moderate oil</span>
-                            </label>
-                            
-                            <div class="prep-styles-list" id="prepStack">
-                                <button type="button" class="prep-style-item active" data-style="homestyle">
-                                    <div class="prep-item-text">
-                                        <strong>Homestyle (Ghar Ka Khana)</strong>
-                                        <small>Measured moderate oil and sodium</small>
-                                    </div>
-                                </button>
-                                <button type="button" class="prep-style-item" data-style="restaurant">
-                                    <div class="prep-item-text">
-                                        <strong>Restaurant / Dhaba Style</strong>
-                                        <small>+25% Calories (Extra rich butter & cream)</small>
-                                    </div>
-                                </button>
-                                <button type="button" class="prep-style-item" data-style="diet">
-                                    <div class="prep-item-text">
-                                        <strong>Diet / Lean Preparation</strong>
-                                        <small>-20% Calories (Minimal oil, reduced sodium)</small>
-                                    </div>
-                                </button>
+                        <div class="control-group">
+                            <div class="control-label-row">
+                                <span class="control-label">Preparation Style</span>
+                                <span class="control-hint" id="prepStyleHint">Balanced home cooking</span>
+                            </div>
+                            <div class="prep-chips-row" id="prepChipsRow">
+                                <!-- Rendered dynamically -->
                             </div>
                         </div>
 
-                        <!-- Human-in-the-Loop Ingredient Checklists (Fried Onions, Meats, Rice, Veggies) -->
-                        <div class="customizer-block" id="customizerIngredientsBlock">
-                            <div class="block-label-row">
-                                <span class="block-label-title">Plate Ingredients <small class="pill-human-tag" style="font-size: 10px;">Toggle what you ate</small>:</span>
-                                <span class="quantity-badge" id="customizerIngrBadge">5 Active</span>
-                            </div>
-                            <p class="card-main-sub" style="margin-bottom: 10px; font-size: 12px;">
-                                <strong>Human-in-the-Loop:</strong> Uncheck any ingredient you skipped or removed (e.g. fried onions, ghee, potatoes):
-                            </p>
-                            <div class="decomp-checklist-stream" id="customizerIngrStream">
-                                <!-- Populated dynamically by app.js -->
-                            </div>
-                        </div>
+                        <!-- Run AI Re-Analysis Trigger Button -->
+                        <button type="button" class="btn-primary-action" id="btnRunInference">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            <span>Re-Analyze with Vision AI</span>
+                        </button>
 
                     </div>
 
                 </div>
 
-                <!-- RIGHT COLUMN: Nutritional Dashboard & Ingredient Decomposition -->
-                <div class="studio-col-right">
+                <!-- COLUMN 3: Deconstructed Ingredient Matrix & Dietitian Guidance -->
+                <div class="studio-col col-decomposition">
                     
-                    <!-- Empty State Placeholder -->
-                    <div class="matte-card empty-dashboard-card" id="emptyDashboardCard">
-                        <div class="empty-plate-icon">
-                            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#9EA69E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <circle cx="12" cy="12" r="5"/>
-                            </svg>
+                    <div class="panel-card decomposition-panel-card">
+                        <div class="panel-header-row">
+                            <h4 class="panel-subhead">What's on the Plate</h4>
+                            <span class="matched-count-pill" id="matchedCountPill">4/4 Clinical Matches</span>
                         </div>
-                        <h3 class="empty-heading">AI Nutritional Profile Awaiting Plate</h3>
-                        <p class="empty-paragraph">
-                            Choose one of the culinary classics from the vault above or upload a food photo to inspect calories, 
-                            constituent ingredients, and European Nutri-Score.
-                        </p>
+                        <p class="panel-instruction">Constituent ingredients isolated by AI. <strong>Uncheck anything you didn't eat</strong> to rebalance nutrients in real time.</p>
+
+                        <!-- Live Ingredient Checklist -->
+                        <div class="ingredients-checklist-stream" id="ingredientsStream">
+                            <!-- Populated dynamically with checkboxes, grams, calories, and bars -->
+                        </div>
                     </div>
 
-                    <!-- Active Results Dashboard (Reveals on inference) -->
-                    <div class="matte-card results-dashboard-card hidden" id="resultsDashboardCard">
-                        
-                        <!-- Header Block: Dish Name, Cuisine, Match Confidence -->
-                        <div class="results-header-banner">
-                            <div class="results-title-group">
-                                <div class="results-tag-pills">
-                                    <span class="pill-tag tag-cuisine" id="resCuisine">Italian Cuisine</span>
-                                    <span class="pill-tag tag-engine" id="resEngine">Gemini Multimodal</span>
-                                </div>
-                                <h2 class="dish-heading" id="resDishName">Baked Lasagna with Bolognese</h2>
-                                <p class="dish-narrative" id="resDishNarrative">
-                                    Durum wheat pasta layered with rich beef ragù, béchamel, and melted mozzarella.
-                                </p>
-                            </div>
-
-                            <!-- Circular Match Gauge -->
-                            <div class="confidence-circle-wrap">
-                                <svg class="confidence-svg" viewBox="0 0 80 80">
-                                    <circle class="svg-track" cx="40" cy="40" r="32"></circle>
-                                    <circle class="svg-fill" id="gaugeIndicator" cx="40" cy="40" r="32" stroke-dasharray="201" stroke-dashoffset="10"></circle>
-                                </svg>
-                                <div class="gauge-center-label">
-                                    <span class="gauge-percent" id="resConfidenceVal">96%</span>
-                                    <span class="gauge-text">Match</span>
-                                </div>
-                            </div>
+                    <!-- Dietitian Guidance & Smart Food Pairing Box -->
+                    <div class="panel-card guidance-panel-card">
+                        <div class="guidance-item">
+                            <div class="guidance-tag">Dietitian's Recommendation</div>
+                            <p class="guidance-text" id="guidanceRecommendation">
+                                Moderate portion size to regulate saturated lipids. Provides excellent lean protein and sustained carbohydrate energy.
+                            </p>
                         </div>
-
-                        <!-- European Official Nutri-Score Bar -->
-                        <div class="nutriscore-display-panel">
-                            <div class="ns-row-top">
-                                <span class="ns-main-label">European Nutri-Score Grade:</span>
-                                <span class="ns-grade-meaning" id="resNutriGradeMeaning">Grade C • Balanced Consumption</span>
-                            </div>
-
-                            <div class="nutriscore-pill-bar">
-                                <div class="ns-pill-item pill-a" data-grade="A"><span>A</span></div>
-                                <div class="ns-pill-item pill-b" data-grade="B"><span>B</span></div>
-                                <div class="ns-pill-item pill-c" data-grade="C"><span>C</span></div>
-                                <div class="ns-pill-item pill-d" data-grade="D"><span>D</span></div>
-                                <div class="ns-pill-item pill-e" data-grade="E"><span>E</span></div>
-                            </div>
+                        <div class="guidance-divider"></div>
+                        <div class="guidance-item">
+                            <div class="guidance-tag">Smart Food Pairing</div>
+                            <p class="guidance-text" id="guidancePairing">
+                                Pair with cucumber raita or fresh green salad with lemon vinaigrette to dampen the post-prandial glycemic response.
+                            </p>
                         </div>
-
-                        <!-- Interactive Portion Size Slider -->
-                        <div class="portion-interactive-panel">
-                            <div class="portion-title-row">
-                                <div class="portion-label-wrap">
-                                    <div>
-                                        <strong>Adjust Serving Portion:</strong>
-                                        <small class="portion-sub-text">Scales all calories & macronutrients dynamically</small>
-                                    </div>
-                                </div>
-                                <span class="portion-pill-badge" id="portionLabelBadge">Standard Single (1.0x)</span>
-                            </div>
-
-                            <input type="range" class="matte-range-slider" id="portionSlider" min="0.5" max="3.0" step="0.25" value="1.0">
-
-                            <div class="portion-ticks-row">
-                                <span>0.5x Light</span>
-                                <span>1.0x Standard</span>
-                                <span>1.5x Hearty</span>
-                                <span>2.0x Double</span>
-                                <span>3.0x Feast</span>
-                            </div>
-                        </div>
-
-                        <!-- 4-Card Macronutrient Grid (Matte Porcelain Finish) -->
-                        <div class="macros-quad-grid">
-                            
-                            <!-- Energy (Calories) -->
-                            <div class="macro-tile-card tile-energy">
-                                <div class="tile-header">
-                                    <span class="macro-dot dot-energy"></span>
-                                    <span class="tile-name">Energy</span>
-                                </div>
-                                <div class="tile-val-wrap">
-                                    <span class="tile-number" id="valCalories">590</span>
-                                    <span class="tile-unit">kcal</span>
-                                </div>
-                                <div class="tile-progress-bg">
-                                    <div class="tile-progress-fill fill-energy" id="fillCalories" style="width: 30%;"></div>
-                                </div>
-                                <small class="tile-footnote">~30% of daily 2000 kcal guide</small>
-                            </div>
-
-                            <!-- Protein -->
-                            <div class="macro-tile-card tile-protein">
-                                <div class="tile-header">
-                                    <span class="macro-dot dot-protein"></span>
-                                    <span class="tile-name">Protein</span>
-                                </div>
-                                <div class="tile-val-wrap">
-                                    <span class="tile-number" id="valProtein">31.2</span>
-                                    <span class="tile-unit">g</span>
-                                </div>
-                                <div class="tile-progress-bg">
-                                    <div class="tile-progress-fill fill-protein" id="fillProtein" style="width: 50%;"></div>
-                                </div>
-                                <small class="tile-footnote">Muscle building & repair</small>
-                            </div>
-
-                            <!-- Carbohydrates -->
-                            <div class="macro-tile-card tile-carbs">
-                                <div class="tile-header">
-                                    <span class="macro-dot dot-carbs"></span>
-                                    <span class="tile-name">Carbs</span>
-                                </div>
-                                <div class="tile-val-wrap">
-                                    <span class="tile-number" id="valCarbs">48.5</span>
-                                    <span class="tile-unit">g</span>
-                                </div>
-                                <div class="tile-progress-bg">
-                                    <div class="tile-progress-fill fill-carbs" id="fillCarbs" style="width: 38%;"></div>
-                                </div>
-                                <small class="tile-footnote">Glycogen & daily energy fuel</small>
-                            </div>
-
-                            <!-- Fat -->
-                            <div class="macro-tile-card tile-fat">
-                                <div class="tile-header">
-                                    <span class="macro-dot dot-fat"></span>
-                                    <span class="tile-name">Total Fat</span>
-                                </div>
-                                <div class="tile-val-wrap">
-                                    <span class="tile-number" id="valFat">32.4</span>
-                                    <span class="tile-unit">g</span>
-                                </div>
-                                <div class="tile-progress-bg">
-                                    <div class="tile-progress-fill fill-fat" id="fillFat" style="width: 46%;"></div>
-                                </div>
-                                <small class="tile-footnote">Includes cooking oil & cheese</small>
-                            </div>
-
-                        </div>
-
-                        <!-- INGREDIENT DECONSTRUCTION MATRIX (The Star Feature Evaluator Asked For!) -->
-                        <div class="ingredient-decomposition-card" id="ingredientDecompCard">
-                            <div class="decomp-top-bar">
-                                <div class="decomp-heading-group">
-                                    <div>
-                                        <h3 class="decomp-title">Deconstructed Ingredient Matrix</h3>
-                                        <p class="decomp-sub">
-                                            Constituents isolated by Gemini Vision. 
-                                            <strong>Uncheck any ingredient</strong> to see real-time calorie & Nutri-Score recalculation.
-                                        </p>
-                                    </div>
-                                </div>
-                                <span class="decomp-matched-badge" id="decompMatchedBadge">8/8 Matched</span>
-                            </div>
-
-                            <!-- Checklist of Individual Ingredients -->
-                            <div class="decomp-checklist-stream" id="decompChecklistStream">
-                                <!-- Populated dynamically by app.js -->
-                            </div>
-                        </div>
-
-                        <!-- Dietitian Recommendations & Pairing Guidance -->
-                        <div class="guidance-dual-grid">
-                            <div class="guidance-matte-box">
-                                <div class="guidance-box-header">
-                                    <strong>Dietitian's Recommendation:</strong>
-                                </div>
-                                <p class="guidance-box-text" id="valRecommendation">
-                                    Satisfying carbohydrate and protein balance. Keep portion size moderate to regulate saturated fat intake.
-                                </p>
-                            </div>
-
-                            <div class="guidance-matte-box">
-                                <div class="guidance-box-header">
-                                    <strong>Smart Food Pairing:</strong>
-                                </div>
-                                <p class="guidance-box-text" id="valPairing">
-                                    Pair with a fresh green salad with lemon vinaigrette to lower meal glycemic impact.
-                                </p>
-                            </div>
-                        </div>
-
                     </div>
 
                 </div>
 
             </div>
+        </section>
 
-        </div>
     </main>
 
-    <!-- Footer -->
+    <!-- Hidden Native File Input for Photo Uploads -->
+    <input type="file" id="hiddenFileInput" accept="image/*" class="native-hidden-input">
+
+    <!-- Academic Footer -->
     <footer class="app-footer">
-        <div class="footer-wrap">
-            <div class="footer-left">
-                <strong>NutriScore AI Vision</strong> • Academic Research System for Dietary Intelligence & Ingredient Decomposition
+        <div class="footer-container">
+            <div class="footer-brand">
+                <b>Nutri<span>Score</span> AI Vision</b> · Academic Dietary Assessment & Multimodal Ingredient Decompiler
             </div>
-            <div class="footer-right">
-                <span>Engines: MobileNetV2 (Keras) + Gemini 3.5 Flash (Multimodal) • Clinical DB: ICMR-NIN & USDA FoodData Central</span>
+            <div class="footer-meta">
+                Clinical Knowledge Base: <b>ICMR-NIN IFCT 2017</b> & <b>USDA FoodData Central</b> · Dual-Engine: <b>MobileNetV2 + Gemini 3.5 Flash</b>
             </div>
         </div>
     </footer>
 
-    <!-- App JavaScript with Cache Buster -->
-    <script src="./app.js?v=5.0"></script>
+    <!-- Application Script with Cache Buster -->
+    <script src="./app.js?v=6.0"></script>
 </body>
 </html>

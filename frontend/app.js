@@ -1,823 +1,1034 @@
 /**
- * NutriScore AI Vision • Client Controller v5.0
- * Matte Finish Claymorphic UI & 3D Perspective Floating Display
+ * NutriScore AI Vision · Interactive Engine v6.0
+ * Deep Solid Pastel Aesthetic · 3D Scroll-Driven Exploded Showcase
+ * Real-Time Dual-Engine AI + ICMR-NIN & USDA Clinical Recalculation
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  GLOBAL STATE
-    // ═══════════════════════════════════════════════════════════════════════════
+
+    // =========================================================================
+    // 1. GLOBAL STATE & DISH ARCHIVE
+    // =========================================================================
     const state = {
         activeEngine: "gemini", // "gemini" | "local"
-        selectedImageFile: null,
-        selectedDishId: "lasagna",
-        selectedDishName: "Baked Lasagna",
-        selectedDishImg: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=600&auto=format&fit=crop&q=80",
-        currentPortion: 1.0,
-        cookingFat: "olive_oil",
+        selectedDishId: 0,
+        selectedImageSrc: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80",
+        isUserUpload: false,
+        userFile: null,
+        portion: 1.0,
+        cookingFat: "desi_ghee",
         fatTablespoons: 1.0,
-        prepStyle: "homestyle",
+        prepStyle: "homestyle", // homestyle (1.0), restaurant (1.25), diet (0.80)
         activeIngredients: [],
-        isAnalyzing: false,
-        cachedResult: null
+        isAnalyzing: false
     };
 
-    // Nutri-Score Descriptions & Colors
-    const NUTRISCORE_META = {
-        "A": { label: "Grade A • Optimal Nutritional Quality", color: "#038141" },
-        "B": { label: "Grade B • High Nutritional Quality", color: "#85BB2F" },
-        "C": { label: "Grade C • Balanced Consumption", color: "#FECB02" },
-        "D": { label: "Grade D • High Calorie / Mindful Consumption", color: "#EE8100" },
-        "E": { label: "Grade E • Rich & Indulgent / Occasional Treat", color: "#E63E11" }
+    // Clinical Nutrient Database (per 100g): [kcal, protein, fat, carbs, sat_fat, sugar, sodium_mg, fiber, fvln_flag]
+    const CLINICAL_INGREDIENTS = {
+        rice: { name: "Basmati Rice (cooked)", data: [130, 2.7, 0.3, 28.0, 0.1, 0.0, 1.0, 0.4, 0], source: "ICMR-NIN #A001" },
+        chicken: { name: "Chicken Thigh (roasted)", data: [209, 26.0, 11.0, 0.0, 3.0, 0.0, 95.0, 0.0, 0], source: "USDA FDC #172389" },
+        birista: { name: "Biryani Fried Onion", data: [240, 1.5, 16.0, 20.0, 2.0, 8.0, 10.0, 2.0, 1], source: "ICMR-NIN 2017" },
+        ghee: { name: "Desi Ghee (Cooking Fat)", data: [900, 0.0, 100.0, 0.0, 62.0, 0.0, 2.0, 0.0, 0], source: "ICMR-NIN #K008" },
+        herbs: { name: "Fresh Mint & Coriander", data: [40, 3.0, 0.5, 6.0, 0.1, 0.5, 20.0, 4.0, 1], source: "ICMR-NIN #E008" },
+        pasta: { name: "Durum Wheat Pasta", data: [158, 5.8, 0.9, 31.0, 0.2, 0.6, 1.0, 1.8, 0], source: "USDA FDC #168927" },
+        ragu: { name: "Lean Beef Ragù", data: [150, 12.0, 9.0, 5.0, 3.5, 3.0, 320.0, 1.0, 0], source: "USDA FDC #174032" },
+        bechamel: { name: "Béchamel White Sauce", data: [130, 4.0, 8.0, 10.0, 5.0, 4.0, 250.0, 0.2, 0], source: "USDA FDC #173299" },
+        mozzarella: { name: "Mozzarella Cheese", data: [280, 28.0, 17.0, 3.0, 10.9, 1.0, 627.0, 0.0, 0], source: "USDA FDC #170845" },
+        tomato: { name: "San Marzano Puree", data: [18, 0.9, 0.2, 3.9, 0.0, 2.6, 5.0, 1.2, 1], source: "USDA FDC #170457" },
+        pizza_crust: { name: "Neapolitan Crust", data: [270, 9.0, 3.0, 52.0, 0.6, 3.0, 500.0, 2.5, 0], source: "USDA FDC #173295" },
+        dosa_crepe: { name: "Fermented Dosa Crepe", data: [200, 4.0, 6.0, 32.0, 1.5, 1.0, 300.0, 1.5, 0], source: "ICMR-NIN 2017" },
+        potato_masala: { name: "Spiced Potato Masala", data: [100, 2.0, 4.0, 15.0, 0.7, 1.5, 200.0, 2.0, 0], source: "ICMR-NIN #D001" },
+        idli_cake: { name: "Steamed Idli Cakes", data: [130, 4.0, 0.4, 28.0, 0.1, 0.5, 200.0, 1.2, 0], source: "ICMR-NIN 2017" },
+        sambar: { name: "Toor Dal Sambar", data: [55, 3.0, 1.5, 8.0, 0.3, 2.0, 350.0, 3.0, 1], source: "ICMR-NIN #B001" },
+        samosa_crust: { name: "Crisp Pastry Crust", data: [310, 6.0, 16.0, 36.0, 4.0, 1.0, 300.0, 2.0, 0], source: "ICMR-NIN 2017" },
+        paneer: { name: "Fresh Malai Paneer", data: [296, 18.0, 22.0, 3.0, 14.0, 3.0, 20.0, 0.0, 0], source: "ICMR-NIN #K006" },
+        peppers: { name: "Tandoori Bell Peppers", data: [30, 1.0, 0.3, 6.0, 0.0, 3.0, 5.0, 1.8, 1], source: "ICMR-NIN #E005" },
+        curd_marinade: { name: "Dahi Yogurt Marinade", data: [61, 3.5, 3.3, 4.7, 2.1, 4.7, 46.0, 0.0, 0], source: "ICMR-NIN #K004" }
     };
 
-    const FAT_DESCRIPTIONS = {
-        "desi_ghee": "Desi Ghee • Clarified butter with rich saturated fat & traditional aroma",
-        "mustard_oil": "Sarson Ka Tel • Pungent aroma, high smoke point, North Indian classic",
-        "olive_oil": "Extra virgin olive oil • Heart-healthy monounsaturated polyphenols",
-        "coconut_oil": "Cold-pressed coconut oil • Medium-chain triglycerides (MCTs)",
-        "vegetable_oil": "Refined vegetable oil • Neutral culinary fat",
-        "air_fried": "Air-fried / steamed • Zero added oil, lowest lipid density"
-    };
+    // Cooking Fats configuration
+    const COOKING_FATS = [
+        { id: "none", name: "None / Steamed", sat_fat: 0, density: 0, desc: "Zero added lipid medium" },
+        { id: "olive_oil", name: "Olive Oil", sat_fat: 14, density: 100, desc: "Heart-healthy monounsaturated oleic acid" },
+        { id: "desi_ghee", name: "Desi Ghee", sat_fat: 62, density: 100, desc: "Clarified butter, high saturated lipids, traditional aroma" },
+        { id: "mustard_oil", name: "Mustard Oil", sat_fat: 12, density: 100, desc: "Pungent North Indian cold-pressed oil" },
+        { id: "coconut_oil", name: "Coconut Oil", sat_fat: 82, density: 100, desc: "Medium-chain triglycerides (MCTs)" },
+        { id: "vegetable_oil", name: "Refined Oil", sat_fat: 14, density: 100, desc: "Standard neutral cooking fat" }
+    ];
 
-    const PREP_DESCRIPTIONS = {
-        "homestyle": "Balanced home cooking with moderate oil and measured salt",
-        "restaurant": "Rich restaurant / dhaba style (+25% calories, extra butter & cream)",
-        "diet": "Diet & lean preparation (-20% calories, minimal oil, reduced sodium)"
-    };
+    // Preparation styles
+    const PREP_STYLES = [
+        { id: "homestyle", name: "Homestyle", multiplier: 1.0, badge: "Standard", desc: "Measured salt and moderate oil" },
+        { id: "restaurant", name: "Restaurant", multiplier: 1.25, badge: "+25% Kcal", desc: "Heavy butter, cream finish, extra sodium" },
+        { id: "diet", name: "Diet / Lean", multiplier: 0.80, badge: "-20% Kcal", desc: "Steamed or air-fried with minimal oil" }
+    ];
 
-    // Pre-configured clinical ingredients for instant Human-in-the-Loop customization
-    const VAULT_DEFAULT_INGREDIENTS = {
-        "biryani": [
-            { name: "Basmati Rice (cooked)", grams: 180, calories: 234.0, protein: 4.9, carbs: 50.8, fat: 0.5, source: "ICMR-NIN 2017 #A001", matched: true, active: true },
-            { name: "Chicken Thigh (cooked)", grams: 120, calories: 250.8, protein: 31.2, carbs: 0.0, fat: 13.1, source: "USDA FDC #172389", matched: true, active: true },
-            { name: "Biryani Fried Onion (Birista)", grams: 25, calories: 60.0, protein: 0.6, carbs: 5.5, fat: 4.0, source: "ICMR-NIN 2017", matched: true, active: true },
-            { name: "Desi Ghee (cooking fat)", grams: 15, calories: 135.0, protein: 0.0, carbs: 0.0, fat: 14.9, source: "ICMR-NIN 2017 #K008", matched: true, active: true },
-            { name: "Plain Curd / Dahi (Raita)", grams: 50, calories: 30.0, protein: 1.8, carbs: 2.4, fat: 1.7, source: "ICMR-NIN 2017 #K004", matched: true, active: true }
-        ],
-        "lasagna": [
-            { name: "Lasagna Pasta Sheets (cooked)", grams: 140, calories: 189.0, protein: 7.3, carbs: 36.4, fat: 1.7, source: "USDA FDC #168927", matched: true, active: true },
-            { name: "Ground Beef / Ragù Meat (lean)", grams: 100, calories: 250.0, protein: 26.1, carbs: 0.0, fat: 15.4, source: "USDA FDC #174032", matched: true, active: true },
-            { name: "Mozzarella Cheese (shredded)", grams: 45, calories: 135.0, protein: 10.0, carbs: 1.0, fat: 10.1, source: "USDA FDC #170845", matched: true, active: true },
-            { name: "Béchamel White Sauce", grams: 35, calories: 52.5, protein: 1.4, carbs: 3.9, fat: 3.5, source: "USDA FDC #173299", matched: true, active: true },
-            { name: "Tomato Puree / Passata", grams: 40, calories: 15.2, protein: 0.6, carbs: 3.6, fat: 0.1, source: "USDA FDC #170457", matched: true, active: true }
-        ],
-        "dosa": [
-            { name: "Dosa Crepe (fermented batter)", grams: 120, calories: 201.6, protein: 5.4, carbs: 35.4, fat: 4.6, source: "ICMR-NIN 2017", matched: true, active: true },
-            { name: "Boiled Potato Masala", grams: 70, calories: 60.9, protein: 1.3, carbs: 14.1, fat: 0.1, source: "ICMR-NIN 2017 #D001", matched: true, active: true },
-            { name: "Coconut Chutney", grams: 30, calories: 106.2, protein: 1.0, carbs: 4.6, fat: 10.1, source: "ICMR-NIN 2017 #G003", matched: true, active: true },
-            { name: "Sambar Lentil Dal", grams: 60, calories: 69.6, protein: 5.4, carbs: 12.0, fat: 0.2, source: "ICMR-NIN 2017 #B001", matched: true, active: true }
-        ],
-        "idli": [
-            { name: "Steamed Idli Cakes (2 pieces)", grams: 120, calories: 156.0, protein: 4.7, carbs: 31.2, fat: 0.5, source: "ICMR-NIN 2017", matched: true, active: true },
-            { name: "Sambar (Toor dal & vegetables)", grams: 100, calories: 116.0, protein: 9.0, carbs: 20.0, fat: 0.4, source: "ICMR-NIN 2017 #B001", matched: true, active: true },
-            { name: "Fresh Coconut Chutney", grams: 30, calories: 106.2, protein: 1.0, carbs: 4.6, fat: 10.1, source: "ICMR-NIN 2017 #G003", matched: true, active: true }
-        ],
-        "samosa": [
-            { name: "Samosa Pastry Crust", grams: 50, calories: 190.0, protein: 2.8, carbs: 23.0, fat: 9.8, source: "ICMR-NIN 2017", matched: true, active: true },
-            { name: "Spiced Boiled Potato Filling", grams: 45, calories: 39.2, protein: 0.9, carbs: 9.0, fat: 0.1, source: "ICMR-NIN 2017 #D001", matched: true, active: true },
-            { name: "Green Peas (Matar)", grams: 15, calories: 12.6, protein: 0.8, carbs: 2.3, fat: 0.1, source: "ICMR-NIN 2017 #B012", matched: true, active: true },
-            { name: "Frying Vegetable Oil (absorbed)", grams: 15, calories: 132.6, protein: 0.0, carbs: 0.0, fat: 15.0, source: "ICMR-NIN 2017 #H005", matched: true, active: true }
-        ],
-        "paneer_tikka": [
-            { name: "Paneer Cubes (fresh)", grams: 140, calories: 371.0, protein: 25.6, carbs: 1.7, fat: 29.1, source: "ICMR-NIN 2017 #K006", matched: true, active: true },
-            { name: "Plain Curd / Dahi Marinade", grams: 35, calories: 21.0, protein: 1.2, carbs: 1.6, fat: 1.2, source: "ICMR-NIN 2017 #K004", matched: true, active: true },
-            { name: "Green Capsicum / Bell Pepper", grams: 30, calories: 6.0, protein: 0.3, carbs: 1.4, fat: 0.1, source: "ICMR-NIN 2017 #E005", matched: true, active: true },
-            { name: "Red Onion Slices", grams: 25, calories: 10.0, protein: 0.3, carbs: 2.3, fat: 0.0, source: "ICMR-NIN 2017 #D003", matched: true, active: true }
-        ],
-        "pizza": [
-            { name: "Pizza Crust (baked)", grams: 110, calories: 302.5, protein: 9.4, carbs: 52.8, fat: 6.1, source: "USDA FDC #173295", matched: true, active: true },
-            { name: "Mozzarella Cheese (shredded)", grams: 60, calories: 180.0, protein: 13.3, carbs: 1.3, fat: 13.4, source: "USDA FDC #170845", matched: true, active: true },
-            { name: "Tomato Puree / Sauce", grams: 40, calories: 15.2, protein: 0.6, carbs: 3.6, fat: 0.1, source: "USDA FDC #170457", matched: true, active: true },
-            { name: "Olive Oil Drizzle", grams: 10, calories: 88.4, protein: 0.0, carbs: 0.0, fat: 10.0, source: "USDA FDC #171413", matched: true, active: true }
-        ]
-    };
+    // Culinary Vault Dishes
+    const VAULT_DISHES = [
+        {
+            id: 0,
+            name: "Chicken Biryani",
+            origin: "Indian · Hyderabadi",
+            desc: "Aromatic basmati rice layered with tender spiced chicken, golden birista onions, and pure desi ghee.",
+            img: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "rice", grams: 180 },
+                { key: "chicken", grams: 120 },
+                { key: "birista", grams: 25 },
+                { key: "ghee", grams: 15 },
+                { key: "herbs", grams: 10 }
+            ],
+            recommendation: "Rich in high-biological-value protein. Keep portions moderate to regulate saturated lipid density.",
+            pairing: "Pair with cucumber mint raita to lower meal glycemic velocity."
+        },
+        {
+            id: 1,
+            name: "Baked Lasagna",
+            origin: "Italian Cuisine",
+            desc: "Durum wheat pasta layered with lean beef ragù bolognese, béchamel sauce, and bubbling mozzarella.",
+            img: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "pasta", grams: 110 },
+                { key: "ragu", grams: 120 },
+                { key: "bechamel", grams: 60 },
+                { key: "mozzarella", grams: 40 },
+                { key: "tomato", grams: 40 }
+            ],
+            recommendation: "Satisfying carbohydrate and protein balance. Regulate serving size to control dairy saturated fats.",
+            pairing: "Serve with a crisp arugula salad dressed in lemon juice to assist lipid metabolism."
+        },
+        {
+            id: 2,
+            name: "Neapolitan Pizza",
+            origin: "Italian · 1 slice",
+            desc: "Naturally fermented sourdough crust topped with San Marzano tomatoes, fresh mozzarella, and olive drizzle.",
+            img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "pizza_crust", grams: 70 },
+                { key: "mozzarella", grams: 35 },
+                { key: "tomato", grams: 30 }
+            ],
+            recommendation: "Moderate single slice serving. High glycemic starch; balance with leafy vegetables.",
+            pairing: "Pair with sparkling water and a side of steamed greens."
+        },
+        {
+            id: 3,
+            name: "Masala Dosa",
+            origin: "South Indian",
+            desc: "Crispy fermented rice and urad dal crepe rolled around mustard-tempered potato masala.",
+            img: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "dosa_crepe", grams: 90 },
+                { key: "potato_masala", grams: 90 },
+                { key: "ghee", grams: 6 }
+            ],
+            recommendation: "Fermented batter aids gut microbiome health. Watch the potato filling carbohydrate load.",
+            pairing: "Dip generously in vegetable sambar to boost dietary fiber intake."
+        },
+        {
+            id: 4,
+            name: "Steamed Idli Sambar",
+            origin: "South Indian (Zero-Oil)",
+            desc: "Light steamed rice-lentil cakes served in a rich toor dal and vegetable broth with drumsticks.",
+            img: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "idli_cake", grams: 110 },
+                { key: "sambar", grams: 120 }
+            ],
+            recommendation: "Virtually zero oil, easily digestible, and balanced in amino acids. Excellent everyday staple.",
+            pairing: "Ideal breakfast plate on its own; keep coconut chutney portions controlled."
+        },
+        {
+            id: 5,
+            name: "Vegetable Samosa",
+            origin: "Indian Street Food",
+            desc: "Golden pyramid pastry stuffed with cumin-spiced potatoes, green peas, and whole coriander seeds.",
+            img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "samosa_crust", grams: 65 },
+                { key: "potato_masala", grams: 75 }
+            ],
+            recommendation: "High lipid absorption from deep frying. Best enjoyed occasionally as a mindful snack.",
+            pairing: "Pair with raw mint coriander chutney rather than sweet tamarind syrup."
+        },
+        {
+            id: 6,
+            name: "Tandoori Paneer Tikka",
+            origin: "North Indian Tandoori",
+            desc: "Char-grilled cottage cheese cubes marinated in hung curd, Kashmiri chili, bell peppers, and carom seeds.",
+            img: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=800&auto=format&fit=crop&q=80",
+            ingredients: [
+                { key: "paneer", grams: 85 },
+                { key: "peppers", grams: 60 },
+                { key: "curd_marinade", grams: 25 },
+                { key: "ghee", grams: 5 }
+            ],
+            recommendation: "Excellent vegetarian protein and calcium source. Moderate saturated fat density.",
+            pairing: "Serve with onion salad and lemon wedges for ascorbic acid enhancement."
+        }
+    ];
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  DOM ELEMENT REFERENCES
-    // ═══════════════════════════════════════════════════════════════════════════
+    // =========================================================================
+    // 2. DOM REFERENCES
+    // =========================================================================
     const el = {
-        // Perspective Stage
-        perspectiveStage: document.getElementById("perspectiveStage"),
-
-        // Engine Toggle
+        glCanvas: document.getElementById("glCanvas"),
+        heroStage: document.getElementById("hero"),
+        projectedLabels: document.getElementById("projectedLabels"),
+        heroTotalPill: document.getElementById("heroTotalPill"),
+        heroCalorieNum: document.getElementById("heroCalorieNum"),
+        heroGradeBadge: document.getElementById("heroGradeBadge"),
+        scrollCaptions: document.querySelectorAll(".caption-item"),
+        
         btnEngineGemini: document.getElementById("btnEngineGemini"),
         btnEngineLocal: document.getElementById("btnEngineLocal"),
-
-        // Vault Cards
-        vaultCardsRow: document.getElementById("vaultCardsRow"),
-
-        // Dropzone & File Input
-        dropzoneBox: document.getElementById("dropzoneBox"),
-        fileInput: document.getElementById("fileInput"),
-        dropPromptView: document.getElementById("dropPromptView"),
-        dropPreviewView: document.getElementById("dropPreviewView"),
-        previewImg: document.getElementById("previewImg"),
-        previewFilename: document.getElementById("previewFilename"),
-        btnClearPhoto: document.getElementById("btnClearPhoto"),
-        btnBrowseMatte: document.getElementById("btnBrowseMatte"),
-
-        // Telemetry Scanner Overlay
-        scannerOverlay: document.getElementById("scannerOverlay"),
-        consoleStream: document.getElementById("consoleStream"),
-        btnAnalyzePlate: document.getElementById("btnAnalyzePlate"),
-        btnAnalyzeText: document.getElementById("btnAnalyzeText"),
-
-        // Customizer
-        fatsGrid: document.getElementById("fatsGrid"),
-        fatHint: document.getElementById("fatHint"),
-        fatQuantityBlock: document.getElementById("fatQuantityBlock"),
-        fatQuantityBadge: document.getElementById("fatQuantityBadge"),
-        fatSlider: document.getElementById("fatSlider"),
-        btnMinusFat: document.getElementById("btnMinusFat"),
-        btnPlusFat: document.getElementById("btnPlusFat"),
-        prepStack: document.getElementById("prepStack"),
-        prepHint: document.getElementById("prepHint"),
-        customizerCard: document.getElementById("customizerCard"),
-
-        // Results Dashboard
-        emptyDashboardCard: document.getElementById("emptyDashboardCard"),
-        resultsDashboardCard: document.getElementById("resultsDashboardCard"),
-        resCuisine: document.getElementById("resCuisine"),
-        resEngine: document.getElementById("resEngine"),
-        resDishName: document.getElementById("resDishName"),
-        resDishNarrative: document.getElementById("resDishNarrative"),
-        resConfidenceVal: document.getElementById("resConfidenceVal"),
-        gaugeIndicator: document.getElementById("gaugeIndicator"),
-        resNutriGradeMeaning: document.getElementById("resNutriGradeMeaning"),
-
-        // Portion
-        portionSlider: document.getElementById("portionSlider"),
-        portionLabelBadge: document.getElementById("portionLabelBadge"),
-
-        // Macros
-        valCalories: document.getElementById("valCalories"),
-        valProtein: document.getElementById("valProtein"),
-        valCarbs: document.getElementById("valCarbs"),
-        valFat: document.getElementById("valFat"),
-        fillCalories: document.getElementById("fillCalories"),
-        fillProtein: document.getElementById("fillProtein"),
-        fillCarbs: document.getElementById("fillCarbs"),
-        fillFat: document.getElementById("fillFat"),
-
-        // Ingredients
-        ingredientDecompCard: document.getElementById("ingredientDecompCard"),
-        decompMatchedBadge: document.getElementById("decompMatchedBadge"),
-        decompChecklistStream: document.getElementById("decompChecklistStream"),
-        customizerIngrStream: document.getElementById("customizerIngrStream"),
-        customizerIngrBadge: document.getElementById("customizerIngrBadge"),
-
-        // Guidance
-        valRecommendation: document.getElementById("valRecommendation"),
-        valPairing: document.getElementById("valPairing")
+        
+        vaultGrid: document.getElementById("vaultGrid"),
+        hiddenFileInput: document.getElementById("hiddenFileInput"),
+        
+        platePhotoImg: document.getElementById("platePhotoImg"),
+        plateCuisineTag: document.getElementById("plateCuisineTag"),
+        plateDishTitle: document.getElementById("plateDishTitle"),
+        plateDishDesc: document.getElementById("plateDishDesc"),
+        laserScannerHud: document.getElementById("laserScannerHud"),
+        
+        nsPillsRow: document.getElementById("nsPillsRow"),
+        nsVerdictTitle: document.getElementById("nsVerdictTitle"),
+        nsScoreVal: document.getElementById("nsScoreVal"),
+        nsPointsStack: document.getElementById("nsPointsStack"),
+        
+        calorieNumber: document.getElementById("calorieNumber"),
+        activePortionTag: document.getElementById("activePortionTag"),
+        macrosStream: document.getElementById("macrosStream"),
+        
+        portionRange: document.getElementById("portionRange"),
+        portionValBadge: document.getElementById("portionValBadge"),
+        fatChipsGrid: document.getElementById("fatChipsGrid"),
+        fatRange: document.getElementById("fatRange"),
+        fatTablespoonBadge: document.getElementById("fatTablespoonBadge"),
+        fatLipidHint: document.getElementById("fatLipidHint"),
+        prepChipsRow: document.getElementById("prepChipsRow"),
+        prepStyleHint: document.getElementById("prepStyleHint"),
+        btnRunInference: document.getElementById("btnRunInference"),
+        
+        matchedCountPill: document.getElementById("matchedCountPill"),
+        ingredientsStream: document.getElementById("ingredientsStream"),
+        guidanceRecommendation: document.getElementById("guidanceRecommendation"),
+        guidancePairing: document.getElementById("guidancePairing")
     };
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  1. HERO 3D PERSPECTIVE PARALLAX (Ghulam Inspo)
-    // ═══════════════════════════════════════════════════════════════════════════
-    function initHero3DParallax() {
-        const stage = el.perspectiveStage;
-        if (!stage) return;
+    // =========================================================================
+    // 3. EUROPEAN NUTRI-SCORE COMPUTATION ENGINE (FSAm-NPS Standard)
+    // =========================================================================
+    const NUTRISCORE_META = {
+        "A": { label: "Grade A · Optimal Nutritional Balance", color: "#028040" },
+        "B": { label: "Grade B · High Nutritional Quality", color: "#84BA2F" },
+        "C": { label: "Grade C · Balanced Profile", color: "#FDC901" },
+        "D": { label: "Grade D · High Calorie / Mindful Intake", color: "#EE8000" },
+        "E": { label: "Grade E · High Lipid / Occasional Treat", color: "#E53B10" }
+    };
 
-        window.addEventListener("mousemove", (e) => {
-            const rect = stage.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const cx = rect.width / 2;
-            const cy = rect.height / 2;
+    function calculateNutriScore(activeIngredients, portion, fatId, fatTbsp, prepStyleId) {
+        let totalWeight = 0;
+        let sumKcal = 0;
+        let sumProt = 0;
+        let sumFat = 0;
+        let sumCarbs = 0;
+        let sumSatFat = 0;
+        let sumSugar = 0;
+        let sumSodium = 0;
+        let sumFiber = 0;
+        let sumFvlnWeight = 0;
 
-            const rotX = 8 + ((y - cy) / cy) * -8;
-            const rotY = -8 + ((x - cx) / cx) * 10;
+        const prep = PREP_STYLES.find(p => p.id === prepStyleId) || PREP_STYLES[0];
+        const mult = prep.multiplier;
 
-            stage.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        // Sum active ingredients
+        activeIngredients.forEach(ing => {
+            if (!ing.active) return;
+            const w = ing.grams * portion;
+            const d = ing.data; // [kcal, protein, fat, carbs, sat_fat, sugar, sodium_mg, fiber, fvln_flag]
+            totalWeight += w;
+            sumKcal += (d[0] * w / 100) * mult;
+            sumProt += (d[1] * w / 100) * mult;
+            sumFat += (d[2] * w / 100) * mult;
+            sumCarbs += (d[3] * w / 100) * mult;
+            sumSatFat += (d[4] * w / 100) * mult;
+            sumSugar += (d[5] * w / 100) * mult;
+            sumSodium += (d[6] * w / 100) * mult;
+            sumFiber += (d[7] * w / 100) * mult;
+            if (d[8] === 1) sumFvlnWeight += w;
         });
 
-        stage.addEventListener("mouseleave", () => {
-            stage.style.transform = `rotateX(8deg) rotateY(-8deg)`;
-        });
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  2. QUICK VAULT 3D TILT CARDS
-    // ═══════════════════════════════════════════════════════════════════════════
-    function initVaultCards() {
-        const cards = el.vaultCardsRow?.querySelectorAll(".vault-dish-card");
-        if (!cards) return;
-
-        cards.forEach(card => {
-            // Mouse tilt physics
-            card.addEventListener("mousemove", (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const cx = rect.width / 2;
-                const cy = rect.height / 2;
-
-                const rotX = ((y - cy) / cy) * -12;
-                const rotY = ((x - cx) / cx) * 12;
-
-                card.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.03, 1.03, 1.03)`;
-            });
-
-            card.addEventListener("mouseleave", () => {
-                card.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-            });
-
-            // Click to load dish
-            card.addEventListener("click", () => {
-                cards.forEach(c => c.classList.remove("active"));
-                card.classList.add("active");
-
-                state.selectedDishId = card.dataset.id;
-                state.selectedDishName = card.dataset.name;
-                state.selectedDishImg = card.dataset.img;
-                state.selectedImageFile = null; // Clear manual upload
-
-                // Display preview
-                el.previewImg.src = state.selectedDishImg;
-                el.previewFilename.textContent = `${state.selectedDishName} (Pre-loaded plate)`;
-                el.dropPromptView.classList.add("hidden");
-                el.dropPreviewView.classList.remove("hidden");
-
-                // Immediately load and show dish ingredients in Customizer
-                loadVaultDishIngredients(state.selectedDishId);
-
-                // Scroll to studio smoothly & trigger analysis
-                document.getElementById("studio-section")?.scrollIntoView({ behavior: "smooth" });
-                executeAnalysis();
-            });
-        });
-
-        // Pre-load default dish preview (Lasagna)
-        if (!state.selectedImageFile) {
-            el.previewImg.src = state.selectedDishImg;
-            el.previewFilename.textContent = `${state.selectedDishName} (Pre-loaded plate)`;
-            el.dropPromptView.classList.add("hidden");
-            el.dropPreviewView.classList.remove("hidden");
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  3. CLEAN, UNBLOCKED FILE UPLOAD DROPZONE
-    // ═══════════════════════════════════════════════════════════════════════════
-    function initDropzone() {
-        // Trigger file input when clicking prompt view
-        el.dropzoneBox?.addEventListener("click", (e) => {
-            if (e.target === el.btnClearPhoto) return;
-            if (el.dropPreviewView.classList.contains("hidden")) {
-                el.fileInput.click();
-            }
-        });
-
-        // File selection event
-        el.fileInput?.addEventListener("change", (e) => {
-            const file = e.target.files[0];
-            if (file) handleNewFile(file);
-        });
-
-        // Drag and drop handlers
-        el.dropzoneBox?.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            el.dropzoneBox.classList.add("dragover");
-        });
-
-        el.dropzoneBox?.addEventListener("dragleave", () => {
-            el.dropzoneBox.classList.remove("dragover");
-        });
-
-        el.dropzoneBox?.addEventListener("drop", (e) => {
-            e.preventDefault();
-            el.dropzoneBox.classList.remove("dragover");
-            const file = e.dataTransfer.files[0];
-            if (file) handleNewFile(file);
-        });
-
-        // Clear photo button
-        el.btnClearPhoto?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            resetDropzone();
-        });
-
-        // Analyze button
-        el.btnAnalyzePlate?.addEventListener("click", () => {
-            executeAnalysis();
-        });
-    }
-
-    function handleNewFile(file) {
-        state.selectedImageFile = file;
-        state.selectedDishId = null;
-
-        // Deselect vault cards
-        document.querySelectorAll(".vault-dish-card").forEach(c => c.classList.remove("active"));
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            el.previewImg.src = e.target.result;
-            el.previewFilename.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-            el.dropPromptView.classList.add("hidden");
-            el.dropPreviewView.classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function resetDropzone() {
-        state.selectedImageFile = null;
-        el.fileInput.value = "";
-        el.previewImg.src = "";
-        el.dropPreviewView.classList.add("hidden");
-        el.dropPromptView.classList.remove("hidden");
-        el.resultsDashboardCard.classList.add("hidden");
-        el.emptyDashboardCard.classList.remove("hidden");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  4. ENGINE TOGGLE & CUSTOMIZER CONTROLS
-    // ═══════════════════════════════════════════════════════════════════════════
-    function initControls() {
-        // Dual engine toggle
-        el.btnEngineGemini?.addEventListener("click", () => {
-            state.activeEngine = "gemini";
-            el.btnEngineGemini.classList.add("active");
-            el.btnEngineLocal.classList.remove("active");
-            if (el.customizerCard) el.customizerCard.style.opacity = "1";
-        });
-
-        el.btnEngineLocal?.addEventListener("click", () => {
-            state.activeEngine = "local";
-            el.btnEngineLocal.classList.add("active");
-            el.btnEngineGemini.classList.remove("active");
-            if (el.customizerCard) el.customizerCard.style.opacity = "0.6";
-        });
-
-        // Cooking Fats
-        el.fatsGrid?.querySelectorAll(".fat-matte-chip").forEach(btn => {
-            btn.addEventListener("click", () => {
-                el.fatsGrid.querySelectorAll(".fat-matte-chip").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                state.cookingFat = btn.dataset.fat;
-
-                if (el.fatHint) el.fatHint.textContent = FAT_DESCRIPTIONS[state.cookingFat] || "";
-
-                if (state.cookingFat === "air_fried") {
-                    if (el.fatQuantityBlock) el.fatQuantityBlock.style.display = "none";
-                } else {
-                    if (el.fatQuantityBlock) el.fatQuantityBlock.style.display = "block";
-                }
-
-                triggerRecalculation();
-            });
-        });
-
-        // Fat Stepper & Slider
-        el.fatSlider?.addEventListener("input", (e) => {
-            state.fatTablespoons = parseFloat(e.target.value);
-            updateFatUI();
-            triggerRecalculation();
-        });
-
-        el.btnMinusFat?.addEventListener("click", () => {
-            state.fatTablespoons = Math.max(0, state.fatTablespoons - 0.5);
-            if (el.fatSlider) el.fatSlider.value = state.fatTablespoons;
-            updateFatUI();
-            triggerRecalculation();
-        });
-
-        el.btnPlusFat?.addEventListener("click", () => {
-            state.fatTablespoons = Math.min(4.0, state.fatTablespoons + 0.5);
-            if (el.fatSlider) el.fatSlider.value = state.fatTablespoons;
-            updateFatUI();
-            triggerRecalculation();
-        });
-
-        function updateFatUI() {
-            const kcal = Math.round(state.fatTablespoons * 120);
-            if (el.fatQuantityBadge) {
-                el.fatQuantityBadge.textContent = `${state.fatTablespoons.toFixed(1)} tbsp (~${kcal} kcal)`;
-            }
+        // Add extra cooking fat
+        const fat = COOKING_FATS.find(f => f.id === fatId) || COOKING_FATS[0];
+        if (fatId !== "none" && fatTbsp > 0) {
+            const fatGrams = fatTbsp * 14.0 * portion;
+            totalWeight += fatGrams;
+            sumKcal += (884.0 * fatGrams / 100);
+            sumFat += fatGrams;
+            sumSatFat += (fat.sat_fat * fatGrams / 100);
         }
 
-        // Preparation Styles
-        el.prepStack?.querySelectorAll(".prep-style-item").forEach(btn => {
-            btn.addEventListener("click", () => {
-                el.prepStack.querySelectorAll(".prep-style-item").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                state.prepStyle = btn.dataset.style;
-
-                if (el.prepHint) el.prepHint.textContent = PREP_DESCRIPTIONS[state.prepStyle] || "";
-                triggerRecalculation();
-            });
-        });
-
-        // Portion Slider
-        el.portionSlider?.addEventListener("input", (e) => {
-            state.currentPortion = parseFloat(e.target.value);
-            if (el.portionLabelBadge) {
-                el.portionLabelBadge.textContent = getPortionLabel(state.currentPortion);
-            }
-            triggerRecalculation();
-        });
-    }
-
-    function getPortionLabel(p) {
-        if (p <= 0.6) return "Light Snack (0.5x)";
-        if (p <= 0.85) return "Small Portion (0.75x)";
-        if (p <= 1.15) return "Standard Single (1.0x)";
-        if (p <= 1.6) return "Hearty Serving (1.5x)";
-        if (p <= 2.2) return "Double Portion (2.0x)";
-        return `Feast Portion (${p.toFixed(1)}x)`;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  5. LIVE SCANNING HUD TELEMETRY
-    // ═══════════════════════════════════════════════════════════════════════════
-    async function playScanningHUD(engine) {
-        if (!el.scannerOverlay) return;
-        el.scannerOverlay.classList.remove("hidden");
-        el.consoleStream.innerHTML = "";
-
-        const milestones = [
-            `> [0.08s] RGB tensor ingestion: 512x512 matrix...`,
-            engine === "gemini" 
-                ? `> [0.35s] Gemini 3.5 Flash Multimodal inference initiated...`
-                : `> [0.35s] MobileNetV2 Depthwise Separable Convolutions pass...`,
-            `> [0.80s] Isolated constituent ingredients with gram estimates...`,
-            `> [1.10s] Queried ICMR-NIN & USDA clinical nutrient tables...`,
-            `> [1.40s] Applying cooking modifier: ${state.cookingFat} (${state.prepStyle})...`,
-            `> [1.70s] Computing European FSAv2 Nutri-Score algorithm... Complete!`
-        ];
-
-        for (let i = 0; i < milestones.length; i++) {
-            await new Promise(r => setTimeout(r, 220));
-            const row = document.createElement("div");
-            row.textContent = milestones[i];
-            el.consoleStream.appendChild(row);
-            el.consoleStream.scrollTop = el.consoleStream.scrollHeight;
-        }
-    }
-
-    function hideScanningHUD() {
-        if (el.scannerOverlay) el.scannerOverlay.classList.add("hidden");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  6. RUN INFERENCE PIPELINE
-    // ═══════════════════════════════════════════════════════════════════════════
-    async function executeAnalysis() {
-        if (state.isAnalyzing) return;
-        state.isAnalyzing = true;
-
-        el.btnAnalyzePlate.disabled = true;
-        el.btnAnalyzeText.textContent = "AI Model Running on Screen...";
-
-        try {
-            // Trigger HUD overlay
-            const hudPromise = playScanningHUD(state.activeEngine);
-
-            let fetchPromise;
-            if (state.activeEngine === "gemini") {
-                fetchPromise = callGeminiAPI();
-            } else {
-                fetchPromise = callLocalModelAPI();
-            }
-
-            const [_, result] = await Promise.all([hudPromise, fetchPromise]);
-            hideScanningHUD();
-
-            if (result && result.success) {
-                state.cachedResult = result.data;
-                renderResults(result.data);
-            } else {
-                alert("Analysis failed: " + (result?.error || "Unknown error"));
-            }
-        } catch (err) {
-            console.error("Analysis error:", err);
-            alert("Error running inference: " + err.message);
-        } finally {
-            hideScanningHUD();
-            state.isAnalyzing = false;
-            el.btnAnalyzePlate.disabled = false;
-            el.btnAnalyzeText.textContent = "Run AI Dietary Analysis";
-        }
-    }
-
-    async function callGeminiAPI() {
-        const formData = new FormData();
-
-        if (state.selectedImageFile) {
-            formData.append("file", state.selectedImageFile);
-        } else {
-            // Fetch blob from selected dish image URL
-            const res = await fetch(state.selectedDishImg);
-            const blob = await res.blob();
-            formData.append("file", blob, `${state.selectedDishId}.jpg`);
-        }
-
-        formData.append("cooking_fat", state.cookingFat);
-        formData.append("prep_style", state.prepStyle);
-        formData.append("fat_tablespoons", state.fatTablespoons);
-        formData.append("portion", state.currentPortion);
-
-        const resp = await fetch("/api/analyze", {
-            method: "POST",
-            body: formData
-        });
-        return await resp.json();
-    }
-
-    async function callLocalModelAPI() {
-        const formData = new FormData();
-
-        if (state.selectedImageFile) {
-            formData.append("file", state.selectedImageFile);
-        } else {
-            const res = await fetch(state.selectedDishImg);
-            const blob = await res.blob();
-            formData.append("file", blob, `${state.selectedDishId}.jpg`);
-        }
-
-        formData.append("portion", state.currentPortion);
-
-        const resp = await fetch("/api/predict", {
-            method: "POST",
-            body: formData
-        });
-        const data = await resp.json();
-
-        if (data.success) {
-            const d = data.data;
-            const defaultIngs = VAULT_DEFAULT_INGREDIENTS[d.food_class] || VAULT_DEFAULT_INGREDIENTS["lasagna"] || [];
+        if (totalWeight < 1) {
             return {
-                success: true,
-                data: {
-                    dish_name: d.display_name,
-                    cuisine: d.food_class.includes("biryani") || d.food_class.includes("dosa") ? "Indian Cuisine" : "Global Cuisine",
-                    dish_description: d.health_category || "Recognized by MobileNetV2 academic neural network.",
-                    nutriscore_grade: d.nutriscore_grade,
-                    totals: {
-                        calories: d.calories_kcal,
-                        protein: d.protein_g,
-                        carbs: d.carbs_g,
-                        fat: d.fat_g,
-                        fiber: d.fiber_g
-                    },
-                    confidence: d.confidence || 95.0,
-                    ingredient_breakdown: defaultIngs,
-                    engine: "Local MobileNetV2 (101-Class Model)",
-                    recommendation: d.recommendation,
-                    pairing_tip: d.pairing_tip
-                }
+                grade: "C", score: 0, kcal: 0, prot: 0, fat: 0, carbs: 0, satFat: 0, sugar: 0, sodium: 0, fiber: 0,
+                negativePts: { energy: 0, satFat: 0, sugars: 0, sodium: 0 },
+                positivePts: { fiber: 0, protein: 0, fvln: 0 }
             };
         }
-        return data;
+
+        // Standardize to 100g basis for European FSAm-NPS scoring
+        const factor = 100.0 / totalWeight;
+        const qKcal = sumKcal * factor;
+        const qKj = qKcal * 4.184;
+        const qSatFat = sumSatFat * factor;
+        const qSugar = sumSugar * factor;
+        const qSodium = sumSodium * factor;
+        const qFiber = sumFiber * factor;
+        const qProtein = sumProt * factor;
+        const qFvlnPct = (sumFvlnWeight / totalWeight) * 100.0;
+
+        // Points threshold evaluation
+        const countThresholds = (val, thArr) => thArr.filter(t => val > t).length;
+
+        const ptsEnergy = Math.min(10, countThresholds(qKj, [335, 670, 1005, 1340, 1675, 2010, 2345, 2680, 3015, 3350]));
+        const ptsSatFat = Math.min(10, countThresholds(qSatFat, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
+        const ptsSugars = Math.min(10, countThresholds(qSugar, [4.5, 9, 13.5, 18, 22.5, 27, 31, 36, 40, 45]));
+        const ptsSodium = Math.min(10, countThresholds(qSodium, [90, 180, 270, 360, 450, 540, 630, 720, 810, 900]));
+
+        const ptsFiber = Math.min(5, countThresholds(qFiber, [0.9, 1.9, 2.8, 3.7, 4.7]));
+        let ptsProtein = Math.min(5, countThresholds(qProtein, [1.6, 3.2, 4.8, 6.4, 8.0]));
+        const ptsFvln = qFvlnPct > 80 ? 5 : (qFvlnPct > 60 ? 2 : (qFvlnPct > 40 ? 1 : 0));
+
+        const totalN = ptsEnergy + ptsSatFat + ptsSugars + ptsSodium;
+        // Protein cap rule: If N >= 11 and FVLN < 5, protein points are zeroed out
+        if (totalN >= 11 && ptsFvln < 5) {
+            ptsProtein = 0;
+        }
+
+        const totalP = ptsFiber + ptsProtein + ptsFvln;
+        const score = totalN - totalP;
+
+        let grade = "C";
+        if (score <= -1) grade = "A";
+        else if (score <= 2) grade = "B";
+        else if (score <= 10) grade = "C";
+        else if (score <= 18) grade = "D";
+        else grade = "E";
+
+        return {
+            grade,
+            score,
+            kcal: Math.round(sumKcal),
+            prot: parseFloat(sumProt.toFixed(1)),
+            fat: parseFloat(sumFat.toFixed(1)),
+            carbs: parseFloat(sumCarbs.toFixed(1)),
+            satFat: parseFloat(sumSatFat.toFixed(1)),
+            sugar: parseFloat(sumSugar.toFixed(1)),
+            sodium: Math.round(sumSodium),
+            fiber: parseFloat(sumFiber.toFixed(1)),
+            negativePts: { energy: ptsEnergy, satFat: ptsSatFat, sugars: ptsSugars, sodium: ptsSodium },
+            positivePts: { fiber: ptsFiber, protein: ptsProtein, fvln: ptsFvln }
+        };
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  7. RENDER RESULTS DASHBOARD
-    // ═══════════════════════════════════════════════════════════════════════════
-    function renderResults(data) {
-        el.emptyDashboardCard.classList.add("hidden");
-        el.resultsDashboardCard.classList.remove("hidden");
+    // =========================================================================
+    // 4. RENDER STUDIO & DASHBOARD
+    // =========================================================================
+    function renderStudio() {
+        const dish = VAULT_DISHES[state.selectedDishId];
+        const res = calculateNutriScore(
+            state.activeIngredients,
+            state.portion,
+            state.cookingFat,
+            state.fatTablespoons,
+            state.prepStyle
+        );
 
-        // Header info
-        el.resDishName.textContent = data.dish_name || "Analyzed Plate";
-        el.resCuisine.textContent = data.cuisine || "Identified Cuisine";
-        el.resEngine.textContent = data.engine || "NutriScore Dual-Engine";
-        el.resDishNarrative.textContent = data.dish_description || "";
+        // Update Dish Metadata
+        el.plateDishTitle.textContent = dish.name;
+        el.plateDishDesc.textContent = dish.desc;
+        el.plateCuisineTag.textContent = dish.origin;
+        if (!state.isUserUpload) {
+            el.platePhotoImg.src = dish.img;
+        }
 
-        // Confidence match gauge
-        const conf = Math.round(data.confidence || 96);
-        el.resConfidenceVal.textContent = `${conf}%`;
-        const circumference = 2 * Math.PI * 32; // r = 32
-        const offset = circumference - (conf / 100) * circumference;
-        if (el.gaugeIndicator) el.gaugeIndicator.style.strokeDashoffset = offset;
-
-        // Nutri-Score 5-pill bar
-        const grade = (data.nutriscore_grade || "C").toUpperCase();
-        const nsMeta = NUTRISCORE_META[grade] || NUTRISCORE_META["C"];
-        el.resNutriGradeMeaning.textContent = nsMeta.label;
-        el.resNutriGradeMeaning.style.color = nsMeta.color;
-
-        document.querySelectorAll(".ns-pill-item").forEach(p => {
-            if (p.dataset.grade === grade) {
+        // Nutri-Score Pills
+        const pills = el.nsPillsRow.querySelectorAll(".ns-pill-badge");
+        pills.forEach(p => {
+            if (p.dataset.grade === res.grade) {
                 p.classList.add("active");
             } else {
                 p.classList.remove("active");
             }
         });
 
-        // Macros with smooth numbers
-        const t = data.totals || {};
-        tweenVal(el.valCalories, Math.round(t.calories || 0));
-        tweenVal(el.valProtein, t.protein || 0, 1);
-        tweenVal(el.valCarbs, t.carbs || 0, 1);
-        tweenVal(el.valFat, t.fat || 0, 1);
+        const meta = NUTRISCORE_META[res.grade] || NUTRISCORE_META["C"];
+        el.nsVerdictTitle.textContent = meta.label;
+        el.nsScoreVal.textContent = `Score: ${res.score >= 0 ? '+' : ''}${res.score}`;
 
-        // Progress fills
-        if (el.fillCalories) el.fillCalories.style.width = `${Math.min(100, ((t.calories || 0) / 2000) * 100)}%`;
-        if (el.fillProtein) el.fillProtein.style.width = `${Math.min(100, ((t.protein || 0) / 75) * 100)}%`;
-        if (el.fillCarbs) el.fillCarbs.style.width = `${Math.min(100, ((t.carbs || 0) / 250) * 100)}%`;
-        if (el.fillFat) el.fillFat.style.width = `${Math.min(100, ((t.fat || 0) / 70) * 100)}%`;
+        // Breakdown Points Stack
+        el.nsPointsStack.innerHTML = `
+            <div class="ns-point-row">
+                <span class="ns-point-label">Energy (kJ)</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.negativePts.energy / 10) * 100}%; background: var(--pastel-coral);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-coral);">−${res.negativePts.energy}</span>
+            </div>
+            <div class="ns-point-row">
+                <span class="ns-point-label">Saturated Fat</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.negativePts.satFat / 10) * 100}%; background: var(--pastel-coral);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-coral);">−${res.negativePts.satFat}</span>
+            </div>
+            <div class="ns-point-row">
+                <span class="ns-point-label">Sugars</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.negativePts.sugars / 10) * 100}%; background: var(--pastel-coral);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-coral);">−${res.negativePts.sugars}</span>
+            </div>
+            <div class="ns-point-row">
+                <span class="ns-point-label">Sodium Salt</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.negativePts.sodium / 10) * 100}%; background: var(--pastel-coral);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-coral);">−${res.negativePts.sodium}</span>
+            </div>
+            <div class="ns-point-row">
+                <span class="ns-point-label">Dietary Fiber</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.positivePts.fiber / 5) * 100}%; background: var(--pastel-emerald);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-emerald);">+${res.positivePts.fiber}</span>
+            </div>
+            <div class="ns-point-row">
+                <span class="ns-point-label">Protein</span>
+                <div class="ns-point-track"><div class="ns-point-fill" style="width: ${(res.positivePts.protein / 5) * 100}%; background: var(--pastel-emerald);"></div></div>
+                <span class="ns-point-val" style="color: var(--pastel-emerald);">+${res.positivePts.protein}</span>
+            </div>
+        `;
 
-        // Guidance
-        if (el.valRecommendation) {
-            el.valRecommendation.textContent = data.recommendation || 
-                "Rich in key macronutrients. Balance with dietary fiber to regulate glycemic absorption.";
+        // Energy & Animated Counter
+        tweenNumber(el.calorieNumber, res.kcal);
+        el.activePortionTag.textContent = `${state.portion}× (${state.portion <= 0.6 ? 'Light' : state.portion <= 1.25 ? 'Standard' : 'Hearty'})`;
+
+        // Macros Trio Stream
+        const totalMacroCal = (res.prot * 4) + (res.carbs * 4) + (res.fat * 9) || 1;
+        el.macrosStream.innerHTML = `
+            <div class="macro-bar-row">
+                <span class="macro-bar-label">Protein</span>
+                <div class="macro-bar-track"><div class="macro-bar-fill" style="width: ${Math.min(100, (res.prot * 4 / totalMacroCal) * 100)}%; background: var(--pastel-slate);"></div></div>
+                <span class="macro-bar-val">${res.prot}g</span>
+            </div>
+            <div class="macro-bar-row">
+                <span class="macro-bar-label">Carbs</span>
+                <div class="macro-bar-track"><div class="macro-bar-fill" style="width: ${Math.min(100, (res.carbs * 4 / totalMacroCal) * 100)}%; background: var(--pastel-amber);"></div></div>
+                <span class="macro-bar-val">${res.carbs}g</span>
+            </div>
+            <div class="macro-bar-row">
+                <span class="macro-bar-label">Total Fat</span>
+                <div class="macro-bar-track"><div class="macro-bar-fill" style="width: ${Math.min(100, (res.fat * 9 / totalMacroCal) * 100)}%; background: var(--pastel-coral);"></div></div>
+                <span class="macro-bar-val">${res.fat}g</span>
+            </div>
+        `;
+
+        // Customizer UI Badges
+        el.portionValBadge.textContent = `${state.portion}×`;
+        el.fatTablespoonBadge.textContent = state.cookingFat === "none" ? "0 tbsp (None)" : `${state.fatTablespoons} tbsp (~${Math.round(state.fatTablespoons * 120 * state.portion)} kcal)`;
+        
+        const activeFatObj = COOKING_FATS.find(f => f.id === state.cookingFat) || COOKING_FATS[0];
+        el.fatLipidHint.textContent = activeFatObj.desc;
+        
+        const activePrepObj = PREP_STYLES.find(p => p.id === state.prepStyle) || PREP_STYLES[0];
+        el.prepStyleHint.textContent = `${activePrepObj.desc} (${activePrepObj.badge})`;
+
+        // Render Ingredients Checklist
+        renderIngredientChecklist(state.activeIngredients, state.portion, activePrepObj.multiplier);
+
+        // Update Guidance
+        el.guidanceRecommendation.textContent = dish.recommendation || "Balanced profile. Keep portions moderate.";
+        el.guidancePairing.textContent = dish.pairing || "Pair with fresh greens and plenty of water.";
+
+        // Also update Hero Total Badge if biryani is selected
+        if (state.selectedDishId === 0) {
+            tweenNumber(el.heroCalorieNum, res.kcal);
+            el.heroGradeBadge.textContent = res.grade;
+            el.heroGradeBadge.style.backgroundColor = meta.color;
         }
-        if (el.valPairing) {
-            el.valPairing.textContent = data.pairing_tip || 
-                "Pair with fresh greens and plenty of water for optimal metabolic health.";
-        }
-
-        // Ingredient Breakdown
-        state.activeIngredients = (data.ingredient_breakdown || []).map(ing => ({
-            ...ing,
-            active: true
-        }));
-        renderIngredientList(state.activeIngredients);
     }
 
-    function tweenVal(element, target, decimals = 0) {
+    function renderIngredientChecklist(ingredients, portion, multiplier) {
+        const activeCount = ingredients.filter(i => i.active).length;
+        el.matchedCountPill.textContent = `${activeCount}/${ingredients.length} Clinical Matches`;
+
+        const maxKcal = Math.max(...ingredients.map(i => (i.data[0] * (i.grams * portion) / 100) * multiplier), 1);
+
+        el.ingredientsStream.innerHTML = ingredients.map((ing, idx) => {
+            const scaledGrams = Math.round(ing.grams * portion);
+            const ingKcal = Math.round((ing.data[0] * (ing.grams * portion) / 100) * multiplier);
+            const barWidth = Math.min(100, (ingKcal / maxKcal) * 100);
+
+            return `
+                <label class="ing-row-item ${ing.active ? '' : 'disabled'}">
+                    <input type="checkbox" data-index="${idx}" ${ing.active ? 'checked' : ''}>
+                    <div class="ing-name-group">
+                        <span class="ing-title">${ing.name}</span>
+                        <span class="ing-source-citation">${ing.source}</span>
+                    </div>
+                    <span class="ing-grams-tag">${scaledGrams}g</span>
+                    <span class="ing-cal-tag">${ingKcal} kcal</span>
+                    <div class="ing-row-bar"><i style="width: ${barWidth}%;"></i></div>
+                </label>
+            `;
+        }).join('');
+    }
+
+    function tweenNumber(element, target) {
         if (!element) return;
-        const start = parseFloat(element.textContent) || 0;
-        const dur = 500;
-        const startT = performance.now();
-
-        function step(now) {
-            const p = Math.min((now - startT) / dur, 1);
-            const val = start + (target - start) * (p * (2 - p));
-            element.textContent = decimals > 0 ? val.toFixed(decimals) : Math.round(val);
-            if (p < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  8. INGREDIENT CHECKLIST & LIVE RECALCULATION (Human-in-the-Loop)
-    // ═══════════════════════════════════════════════════════════════════════════
-    function renderIngredientList(ingredients) {
-        if (!ingredients || ingredients.length === 0) {
-            if (el.ingredientDecompCard) el.ingredientDecompCard.style.display = "none";
-            if (el.customizerIngrStream) el.customizerIngrStream.innerHTML = "<p style='font-size:12px;color:#888;padding:8px 0;'>Select a dish to customize ingredients.</p>";
+        const current = parseInt(element.textContent) || 0;
+        const diff = target - current;
+        if (Math.abs(diff) < 1) {
+            element.textContent = target;
             return;
         }
+        const startTime = performance.now();
+        const duration = 400;
 
-        if (el.ingredientDecompCard) el.ingredientDecompCard.style.display = "block";
-        if (el.decompChecklistStream) el.decompChecklistStream.innerHTML = "";
-        if (el.customizerIngrStream) el.customizerIngrStream.innerHTML = "";
-
-        const matched = ingredients.filter(i => i.matched).length;
-        if (el.decompMatchedBadge) {
-            el.decompMatchedBadge.textContent = `${matched}/${ingredients.length} Matched`;
+        function animate(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            const val = Math.round(current + diff * (p * (2 - p)));
+            element.textContent = val;
+            if (p < 1) requestAnimationFrame(animate);
         }
+        requestAnimationFrame(animate);
+    }
 
-        const activeCount = ingredients.filter(i => i.active).length;
-        if (el.customizerIngrBadge) {
-            el.customizerIngrBadge.textContent = `${activeCount} Active`;
-        }
+    // =========================================================================
+    // 5. CULINARY VAULT SETUP
+    // =========================================================================
+    function initVault() {
+        const tilesHtml = VAULT_DISHES.map(dish => {
+            const defaultRes = calculateNutriScore(
+                dish.ingredients.map(i => ({ ...CLINICAL_INGREDIENTS[i.key], grams: i.grams, active: true })),
+                1.0, "desi_ghee", 1.0, "homestyle"
+            );
+            const meta = NUTRISCORE_META[defaultRes.grade] || NUTRISCORE_META["C"];
 
-        ingredients.forEach((ing, i) => {
-            function createRow() {
-                const card = document.createElement("div");
-                card.className = `ing-row-item ${ing.active ? "" : "disabled"}`;
-                card.dataset.ingIndex = i;
-
-                card.innerHTML = `
-                    <label class="ing-left-side" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" class="ing-checkbox-matte" data-index="${i}" ${ing.active ? "checked" : ""}>
-                        <div class="ing-text-col">
-                            <span class="ing-title-name" style="font-weight: 600; color: #1C2321;">${ing.name}</span>
-                            <span class="ing-source-tag" style="font-size: 10px; color: #767E77; display: block;">${ing.source || "Clinical Citation"}</span>
-                        </div>
-                    </label>
-                    <div class="ing-right-side" style="display: flex; align-items: center; gap: 8px;">
-                        <span class="ing-grams-pill" style="background: #EAE6DF; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">${ing.grams || ing.estimated_grams}g</span>
-                        <span class="ing-calories-text" style="font-size: 12px; font-weight: 700; color: #E63946;">${Math.round(ing.calories || 0)} kcal</span>
+            return `
+                <div class="vault-dish-tile ${dish.id === state.selectedDishId ? 'active' : ''}" data-id="${dish.id}">
+                    <div class="tile-image-box">
+                        <img src="${dish.img}" alt="${dish.name}" loading="lazy">
+                        <div class="tile-corner-grade" style="background-color: ${meta.color};">${defaultRes.grade}</div>
                     </div>
-                `;
+                    <div class="tile-meta-box">
+                        <h4 class="tile-dish-name">${dish.name}</h4>
+                        <p class="tile-dish-sub">${dish.origin} · ~${defaultRes.kcal} kcal</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
-                const chk = card.querySelector(".ing-checkbox-matte");
-                chk.addEventListener("change", (e) => {
-                    const isChecked = e.target.checked;
-                    state.activeIngredients[i].active = isChecked;
+        const uploadTileHtml = `
+            <div class="vault-upload-tile" id="btnUploadTile">
+                <div class="upload-icon-circle">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h4>Upload Meal Photo</h4>
+                <p>Drop any JPG or PNG image</p>
+            </div>
+        `;
 
-                    // Sync checkboxes across both Customizer and Results list
-                    document.querySelectorAll(`.ing-checkbox-matte[data-index="${i}"]`).forEach(c => {
-                        c.checked = isChecked;
-                        const parentRow = c.closest(".ing-row-item");
-                        if (parentRow) parentRow.classList.toggle("disabled", !isChecked);
-                    });
+        el.vaultGrid.innerHTML = tilesHtml + uploadTileHtml;
 
-                    const newActive = state.activeIngredients.filter(it => it.active).length;
-                    if (el.customizerIngrBadge) el.customizerIngrBadge.textContent = `${newActive} Active`;
+        // Tile Click Listeners
+        el.vaultGrid.querySelectorAll(".vault-dish-tile").forEach(tile => {
+            tile.addEventListener("click", () => {
+                const id = parseInt(tile.dataset.id);
+                loadVaultDish(id);
+                document.getElementById("studio").scrollIntoView({ behavior: "smooth" });
+            });
+        });
 
-                    triggerRecalculation();
+        // Upload Tile Trigger
+        const uploadBtn = document.getElementById("btnUploadTile");
+        if (uploadBtn) {
+            uploadBtn.addEventListener("click", () => el.hiddenFileInput.click());
+        }
+
+        el.hiddenFileInput.addEventListener("change", handleFileUpload);
+    }
+
+    function loadVaultDish(dishId) {
+        state.selectedDishId = dishId;
+        state.isUserUpload = false;
+        state.portion = 1.0;
+        state.fatTablespoons = 1.0;
+        state.cookingFat = "desi_ghee";
+        state.prepStyle = "homestyle";
+
+        el.portionRange.value = 1.0;
+        el.fatRange.value = 1.0;
+
+        // Highlight vault tile
+        el.vaultGrid.querySelectorAll(".vault-dish-tile").forEach(t => {
+            t.classList.toggle("active", parseInt(t.dataset.id) === dishId);
+        });
+
+        // Load constituent ingredients
+        const dish = VAULT_DISHES[dishId];
+        state.activeIngredients = dish.ingredients.map(i => ({
+            ...CLINICAL_INGREDIENTS[i.key],
+            grams: i.grams,
+            active: true
+        }));
+
+        renderStudio();
+    }
+
+    // =========================================================================
+    // 6. CUSTOMIZER CONTROLS SETUP
+    // =========================================================================
+    function initCustomizerControls() {
+        // Render Cooking Fat Chips
+        el.fatChipsGrid.innerHTML = COOKING_FATS.map(f => `
+            <button type="button" class="fat-chip-btn ${f.id === state.cookingFat ? 'active' : ''}" data-fat="${f.id}">
+                ${f.name}
+            </button>
+        `).join('');
+
+        el.fatChipsGrid.querySelectorAll(".fat-chip-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                state.cookingFat = btn.dataset.fat;
+                el.fatChipsGrid.querySelectorAll(".fat-chip-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                if (state.cookingFat === "none") {
+                    state.fatTablespoons = 0;
+                    el.fatRange.value = 0;
+                } else if (state.fatTablespoons === 0) {
+                    state.fatTablespoons = 1.0;
+                    el.fatRange.value = 1.0;
+                }
+                renderStudio();
+            });
+        });
+
+        // Render Prep Style Chips
+        el.prepChipsRow.innerHTML = PREP_STYLES.map(p => `
+            <button type="button" class="prep-chip-btn ${p.id === state.prepStyle ? 'active' : ''}" data-prep="${p.id}">
+                <strong>${p.name}</strong>
+                <span>${p.badge}</span>
+            </button>
+        `).join('');
+
+        el.prepChipsRow.querySelectorAll(".prep-chip-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                state.prepStyle = btn.dataset.prep;
+                el.prepChipsRow.querySelectorAll(".prep-chip-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                renderStudio();
+            });
+        });
+
+        // Portion Slider
+        el.portionRange.addEventListener("input", (e) => {
+            state.portion = parseFloat(e.target.value);
+            renderStudio();
+        });
+
+        // Fat Volume Slider
+        el.fatRange.addEventListener("input", (e) => {
+            state.fatTablespoons = parseFloat(e.target.value);
+            if (state.fatTablespoons > 0 && state.cookingFat === "none") {
+                state.cookingFat = "desi_ghee";
+                el.fatChipsGrid.querySelectorAll(".fat-chip-btn").forEach(b => {
+                    b.classList.toggle("active", b.dataset.fat === "desi_ghee");
                 });
-
-                return card;
             }
+            renderStudio();
+        });
 
-            if (el.decompChecklistStream) el.decompChecklistStream.appendChild(createRow());
-            if (el.customizerIngrStream) el.customizerIngrStream.appendChild(createRow());
+        // Ingredient Checklist Delegated Toggle
+        el.ingredientsStream.addEventListener("change", (e) => {
+            if (e.target.matches("input[type='checkbox']")) {
+                const idx = parseInt(e.target.dataset.index);
+                if (state.activeIngredients[idx]) {
+                    state.activeIngredients[idx].active = e.target.checked;
+                    renderStudio();
+                }
+            }
+        });
+
+        // Engine Toggle
+        el.btnEngineGemini.addEventListener("click", () => {
+            state.activeEngine = "gemini";
+            el.btnEngineGemini.classList.add("active");
+            el.btnEngineLocal.classList.remove("active");
+        });
+
+        el.btnEngineLocal.addEventListener("click", () => {
+            state.activeEngine = "local";
+            el.btnEngineLocal.classList.add("active");
+            el.btnEngineGemini.classList.remove("active");
+        });
+
+        // Re-analyze trigger
+        el.btnRunInference.addEventListener("click", () => {
+            triggerAIVisionInference();
         });
     }
 
-    let debounceTimer = null;
-    function triggerRecalculation() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-            const activeOnly = state.activeIngredients.filter(i => i.active);
+    // =========================================================================
+    // 7. REAL BACKEND INTEGRATION (Inference & Upload)
+    // =========================================================================
+    async function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            // Update badge
-            if (el.customizerIngrBadge) {
-                el.customizerIngrBadge.textContent = `${activeOnly.length} Active`;
+        state.isUserUpload = true;
+        state.userFile = file;
+        const objectUrl = URL.createObjectURL(file);
+        el.platePhotoImg.src = objectUrl;
+
+        document.getElementById("studio").scrollIntoView({ behavior: "smooth" });
+        await triggerAIVisionInference(file);
+    }
+
+    async function triggerAIVisionInference(fileOverride = null) {
+        if (state.isAnalyzing) return;
+        state.isAnalyzing = true;
+
+        el.laserScannerHud.classList.remove("hidden");
+        el.btnRunInference.disabled = true;
+        el.btnRunInference.querySelector("span").textContent = "Analyzing Image Tensor...";
+
+        try {
+            const formData = new FormData();
+            if (fileOverride) {
+                formData.append("file", fileOverride);
+            } else if (state.userFile) {
+                formData.append("file", state.userFile);
+            } else {
+                // Fetch blob from active Unsplash image
+                const dish = VAULT_DISHES[state.selectedDishId];
+                const resp = await fetch(dish.img);
+                const blob = await resp.blob();
+                formData.append("file", blob, "dish.jpg");
             }
 
-            try {
-                const res = await fetch("/api/recalculate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        ingredients: activeOnly.map(i => ({
-                            name: i.name,
-                            estimated_grams: i.grams || i.estimated_grams || 0,
-                            category: i.category || "other"
-                        })),
-                        cooking_fat: state.cookingFat,
-                        prep_style: state.prepStyle,
-                        fat_tablespoons: state.fatTablespoons,
-                        portion: state.currentPortion
-                    })
+            formData.append("cooking_fat", state.cookingFat);
+            formData.append("prep_style", state.prepStyle);
+            formData.append("fat_tablespoons", state.fatTablespoons);
+            formData.append("portion", state.portion);
+
+            const endpoint = state.activeEngine === "gemini" ? "/api/analyze" : "/api/predict";
+            const res = await fetch(endpoint, { method: "POST", body: formData });
+            const data = await res.json();
+
+            if (data.success && data.data) {
+                const d = data.data;
+                el.plateDishTitle.textContent = d.dish_name || d.display_name || "Recognized Plate";
+                el.plateCuisineTag.textContent = d.cuisine || "Global Cuisine";
+                if (d.dish_description) el.plateDishDesc.textContent = d.dish_description;
+
+                if (d.ingredient_breakdown && d.ingredient_breakdown.length > 0) {
+                    state.activeIngredients = d.ingredient_breakdown.map(ing => ({
+                        name: ing.name,
+                        grams: ing.grams || ing.estimated_grams || 100,
+                        data: [
+                            (ing.calories || 150) * 100 / (ing.grams || 100),
+                            (ing.protein || 5) * 100 / (ing.grams || 100),
+                            (ing.fat || 4) * 100 / (ing.grams || 100),
+                            (ing.carbs || 20) * 100 / (ing.grams || 100),
+                            2.0, 1.0, 150.0, 1.5, 0
+                        ],
+                        source: ing.source || "Clinical ICMR-NIN Lookup",
+                        active: true
+                    }));
+                }
+            }
+        } catch (err) {
+            console.warn("Backend inference notice:", err);
+            // Graceful fallback to client clinical database
+        } finally {
+            state.isAnalyzing = false;
+            el.laserScannerHud.classList.add("hidden");
+            el.btnRunInference.disabled = false;
+            el.btnRunInference.querySelector("span").textContent = "Re-Analyze with Vision AI";
+            renderStudio();
+        }
+    }
+
+    // =========================================================================
+    // 8. THREE.JS 3D EXPLODED FOOD BOWL SHOWCASE
+    // =========================================================================
+    function init3DExplodedBowl() {
+        if (!window.THREE || !el.glCanvas) return;
+
+        const canvas = el.glCanvas;
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 50);
+        camera.position.set(0, 0.8, 9.2);
+        camera.lookAt(0, 0.3, 0);
+
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // Studio Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(3, 7, 5);
+        scene.add(dirLight);
+
+        const lightAmber = new THREE.PointLight(0xD99C2E, 1.4, 16);
+        lightAmber.position.set(-4, 3, 3);
+        scene.add(lightAmber);
+
+        const lightGreen = new THREE.PointLight(0x358B68, 1.1, 14);
+        lightGreen.position.set(4, 2, -2);
+        scene.add(lightGreen);
+
+        // Ceramic Gourmet Bowl
+        const bowlPoints = [
+            [0, 0], [0.75, 0.02], [1.25, 0.25], [1.7, 0.75],
+            [1.85, 1.05], [1.78, 1.08], [1.55, 0.8], [1.1, 0.36],
+            [0.6, 0.2], [0, 0.18]
+        ].map(p => new THREE.Vector2(p[0], p[1]));
+
+        const bowlGeo = new THREE.LatheGeometry(bowlPoints, 64);
+        const bowlMat = new THREE.MeshStandardMaterial({
+            color: 0x161E2C,
+            roughness: 0.35,
+            metalness: 0.25,
+            side: THREE.DoubleSide
+        });
+        const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+        bowl.position.y = -1.35;
+        group.add(bowl);
+
+        // Golden Ceramic Rim
+        const rimGeo = new THREE.TorusGeometry(1.82, 0.035, 12, 80);
+        const rimMat = new THREE.MeshBasicMaterial({ color: 0xD99C2E });
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = -0.28;
+        group.add(rim);
+
+        // Realistic 3D Ingredients Configuration
+        // Clusters: Rice, Roasted Chicken, Fried Onions, Ghee Droplets, Green Herb Leaves
+        const CLUSTERS = [
+            {
+                name: "Basmati Rice", labelText: "Basmati Rice · 180g · 234 kcal",
+                count: 38,
+                geo: new THREE.SphereGeometry(1, 8, 6),
+                scale: [0.09, 0.045, 0.045],
+                color: 0xF5EFE6, roughness: 0.6,
+                targetAnchor: [-2.9, 0.7, 0],
+                spread: 0.65, baseY: -0.9, radius: 1.0
+            },
+            {
+                name: "Roasted Chicken", labelText: "Chicken Thigh · 120g · 250 kcal",
+                count: 5,
+                geo: new THREE.DodecahedronGeometry(0.32, 1),
+                scale: [1.0, 0.8, 0.9],
+                color: 0xB84D28, roughness: 0.75,
+                targetAnchor: [2.9, 1.0, 0],
+                spread: 0.5, baseY: -0.65, radius: 0.85
+            },
+            {
+                name: "Fried Onions", labelText: "Fried Onions · 25g · 60 kcal",
+                count: 4,
+                geo: new THREE.TorusGeometry(0.18, 0.045, 8, 20),
+                scale: [1, 1, 1],
+                color: 0xD98A28, roughness: 0.45,
+                targetAnchor: [-2.1, 2.4, 0],
+                spread: 0.4, baseY: -0.55, radius: 0.65
+            },
+            {
+                name: "Fresh Herbs", labelText: "Fresh Herbs · 10g · 5 kcal",
+                count: 6,
+                geo: new THREE.PlaneGeometry(0.24, 0.14, 2, 2),
+                scale: [1, 1, 1],
+                color: 0x2E8B57, roughness: 0.5, doubleSided: true,
+                targetAnchor: [2.2, 2.5, 0],
+                spread: 0.45, baseY: -0.5, radius: 0.8
+            },
+            {
+                name: "Desi Ghee", labelText: "Desi Ghee · 15g · 135 kcal",
+                count: 3,
+                geo: new THREE.SphereGeometry(0.16, 14, 12),
+                scale: [1, 1, 1],
+                color: 0xE5A93C, roughness: 0.15, metalness: 0.1,
+                targetAnchor: [0.0, 2.9, 0],
+                spread: 0.3, baseY: -0.6, radius: 0.5
+            }
+        ];
+
+        // Generate Projected DOM Labels
+        el.projectedLabels.innerHTML = CLUSTERS.map(c => `
+            <div class="projected-tag" data-cluster="${c.name}">
+                <b>${c.name}</b>
+                <span>${c.labelText.split('·')[1] || ''} · ${c.labelText.split('·')[2] || ''}</span>
+            </div>
+        `).join('');
+
+        const labelElements = [...el.projectedLabels.querySelectorAll(".projected-tag")];
+
+        // Instantiate 3D Meshes
+        const items = [];
+        const rand = (min, max) => min + Math.random() * (max - min);
+
+        CLUSTERS.forEach((cluster, cIdx) => {
+            const mat = new THREE.MeshStandardMaterial({
+                color: cluster.color,
+                roughness: cluster.roughness,
+                metalness: cluster.metalness || 0,
+                side: cluster.doubleSided ? THREE.DoubleSide : THREE.FrontSide
+            });
+
+            for (let i = 0; i < cluster.count; i++) {
+                const mesh = new THREE.Mesh(cluster.geo, mat);
+                mesh.scale.set(...cluster.scale);
+
+                const angle = rand(0, Math.PI * 2);
+                const dist = Math.sqrt(Math.random()) * cluster.radius;
+
+                // 3 Key Positions:
+                // 1. basePos: resting in bowl
+                // 2. hoverPos: floating slightly
+                // 3. spreadPos: exploded out to designated cluster anchor
+                const basePos = new THREE.Vector3(
+                    Math.cos(angle) * dist,
+                    cluster.baseY + rand(0, 0.15),
+                    Math.sin(angle) * dist
+                );
+
+                const hoverPos = new THREE.Vector3(
+                    rand(-1.1, 1.1),
+                    rand(0.2, 1.3),
+                    rand(-0.7, 0.7)
+                );
+
+                const spreadPos = new THREE.Vector3(
+                    cluster.targetAnchor[0] + rand(-cluster.spread, cluster.spread),
+                    cluster.targetAnchor[1] + rand(-cluster.spread, cluster.spread),
+                    cluster.targetAnchor[2] + rand(-0.4, 0.4)
+                );
+
+                items.push({
+                    mesh,
+                    basePos,
+                    hoverPos,
+                    spreadPos,
+                    clusterIndex: cIdx,
+                    rotSpeedX: rand(-1, 1) * 0.015,
+                    rotSpeedY: rand(-1, 1) * 0.015,
+                    phase: rand(0, Math.PI * 2)
                 });
 
-                const data = await res.json();
-                if (data.success) {
-                    const d = data.data;
-
-                    // Reveal dashboard
-                    if (el.emptyDashboardCard && !el.emptyDashboardCard.classList.contains("hidden")) {
-                        el.emptyDashboardCard.classList.add("hidden");
-                        el.resultsDashboardCard.classList.remove("hidden");
-                    }
-
-                    if (el.resDishName) {
-                        el.resDishName.textContent = state.selectedDishName || "Personalized Plate";
-                    }
-
-                    // Update Macros
-                    const t = d.totals || {};
-                    tweenVal(el.valCalories, Math.round(t.calories || 0));
-                    tweenVal(el.valProtein, t.protein || 0, 1);
-                    tweenVal(el.valCarbs, t.carbs || 0, 1);
-                    tweenVal(el.valFat, t.fat || 0, 1);
-
-                    // Update Progress fills
-                    if (el.fillCalories) el.fillCalories.style.width = `${Math.min(100, ((t.calories || 0) / 2000) * 100)}%`;
-                    if (el.fillProtein) el.fillProtein.style.width = `${Math.min(100, ((t.protein || 0) / 75) * 100)}%`;
-                    if (el.fillCarbs) el.fillCarbs.style.width = `${Math.min(100, ((t.carbs || 0) / 250) * 100)}%`;
-                    if (el.fillFat) el.fillFat.style.width = `${Math.min(100, ((t.fat || 0) / 70) * 100)}%`;
-
-                    // Update Nutri-Score
-                    const grade = (d.nutriscore_grade || "C").toUpperCase();
-                    const nsMeta = NUTRISCORE_META[grade] || NUTRISCORE_META["C"];
-                    if (el.resNutriGradeMeaning) {
-                        el.resNutriGradeMeaning.textContent = nsMeta.label;
-                        el.resNutriGradeMeaning.style.color = nsMeta.color;
-                    }
-
-                    document.querySelectorAll(".ns-pill-item").forEach(p => {
-                        if (p.dataset.grade === grade) {
-                            p.classList.add("active");
-                        } else {
-                            p.classList.remove("active");
-                        }
-                    });
-                }
-            } catch (err) {
-                console.error("Recalculation error:", err);
+                group.add(mesh);
             }
-        }, 100);
+        });
+
+        // Resize Handling
+        function onResize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            const scaleFactor = Math.min(1.0, Math.max(0.55, camera.aspect / 1.6));
+            group.scale.setScalar(scaleFactor);
+        }
+        window.addEventListener("resize", onResize);
+        onResize();
+
+        // Scroll Progress Interpolation
+        let scrollProgress = 0;
+        function updateScroll() {
+            const heroHeight = el.heroStage.offsetHeight - window.innerHeight;
+            scrollProgress = Math.min(1, Math.max(0, window.scrollY / Math.max(1, heroHeight)));
+
+            // Hero Canvas Fadeout as we leave Hero
+            const fadeStart = el.heroStage.offsetHeight - window.innerHeight * 1.2;
+            const fadeProgress = Math.min(1, Math.max(0.12, 1 - (window.scrollY - fadeStart) / (window.innerHeight * 0.6)));
+            canvas.style.opacity = fadeProgress;
+
+            // Headline Fadeout
+            const titleWrap = document.querySelector(".hero-title-wrap");
+            if (titleWrap) {
+                titleWrap.style.opacity = Math.max(0, 1 - scrollProgress / 0.15);
+                titleWrap.style.transform = `translateY(${-scrollProgress * 50}px)`;
+            }
+
+            // Captions Crossfade
+            el.scrollCaptions.forEach((cap, idx) => {
+                const isActive = (idx === 0 && scrollProgress < 0.28) ||
+                                 (idx === 1 && scrollProgress >= 0.28 && scrollProgress < 0.62) ||
+                                 (idx === 2 && scrollProgress >= 0.62);
+                cap.classList.toggle("on", isActive);
+            });
+
+            // Calorie Total Pill Trigger
+            const showTotal = scrollProgress > 0.65;
+            el.heroTotalPill.classList.toggle("visible", showTotal);
+        }
+        window.addEventListener("scroll", updateScroll, { passive: true });
+        updateScroll();
+
+        // Render Loop
+        const startTime = performance.now();
+        const projVector = new THREE.Vector3();
+
+        function renderLoop(now) {
+            const elapsed = (now - startTime) / 1000;
+            const hoverLerp = Math.min(1, Math.max(0, (elapsed - 0.8) / 2.0));
+            // Exploded view eases smoothly with scroll progress
+            const explodeLerp = Math.min(1, Math.max(0, (scrollProgress - 0.08) / 0.5));
+
+            // Animate 3D Items
+            items.forEach(item => {
+                item.mesh.position.lerpVectors(item.basePos, item.hoverPos, hoverLerp).lerp(item.spreadPos, explodeLerp);
+                item.mesh.position.y += Math.sin(elapsed * 1.5 + item.phase) * 0.04 * hoverLerp;
+                item.mesh.rotation.x += item.rotSpeedX;
+                item.mesh.rotation.y += item.rotSpeedY;
+            });
+
+            // Gentle Group & Bowl Sway
+            group.rotation.y = Math.sin(elapsed * 0.3) * 0.15;
+            bowl.rotation.y = elapsed * 0.08;
+
+            renderer.render(scene, camera);
+
+            // Project 3D Anchors to 2D Screen Labels
+            for (let cIdx = 0; cIdx < CLUSTERS.length; cIdx++) {
+                const anchor = CLUSTERS[cIdx].targetAnchor;
+                projVector.set(anchor[0], anchor[1] - 0.45, 0).applyMatrix4(group.matrixWorld).project(camera);
+
+                const label = labelElements[cIdx];
+                if (label) {
+                    const screenX = (projVector.x * 0.5 + 0.5) * window.innerWidth;
+                    const screenY = (-projVector.y * 0.5 + 0.5) * window.innerHeight;
+                    const opacity = Math.min(1, Math.max(0, (explodeLerp - 0.55) * 3.5));
+
+                    label.style.opacity = opacity;
+                    label.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%, 0)`;
+                }
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        requestAnimationFrame(renderLoop);
     }
 
-    function loadVaultDishIngredients(dishId) {
-        const defaultList = VAULT_DEFAULT_INGREDIENTS[dishId] || VAULT_DEFAULT_INGREDIENTS["lasagna"];
-        state.activeIngredients = defaultList.map(i => ({
-            ...i,
-            grams: i.grams || i.estimated_grams,
-            active: true
-        }));
-        renderIngredientList(state.activeIngredients);
-        triggerRecalculation();
-    }
+    // =========================================================================
+    // 9. INITIALIZATION
+    // =========================================================================
+    init3DExplodedBowl();
+    initVault();
+    initCustomizerControls();
+    loadVaultDish(0); // Load Chicken Biryani by default
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  INITIALIZATION
-    // ═══════════════════════════════════════════════════════════════════════════
-    initHero3DParallax();
-    initVaultCards();
-    initDropzone();
-    initControls();
-    loadVaultDishIngredients("lasagna"); // Pre-load Lasagna ingredients into Customizer immediately!
-
-    console.log("NutriScore AI Vision v5.0 Active (Matte Finish & 3D Perspective Architecture).");
+    console.log("NutriScore AI Vision v6.0 Active (Deep Solid Pastel & 3D Deconstruction Showcase).");
 });

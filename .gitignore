@@ -50,3 +50,4 @@ docs/
 *.pdf
 !frontend/*.html
 
+.matplotlib_cache/
